@@ -1,0 +1,8 @@
+{
+  "name": "Gestion Interventions",
+  "description": "A modern web-based form for municipal maintenance service requests.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}
