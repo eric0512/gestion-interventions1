@@ -19,7 +19,27 @@ import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { Trash2 } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+// Initialisation sécurisée de l'IA
+// On utilise une approche résiliente pour éviter les crashs au chargement
+const getApiKey = () => {
+  try {
+    return process.env.GEMINI_API_KEY || "";
+  } catch (e) {
+    return "";
+  }
+};
+
+const API_KEY = getApiKey();
+let ai: any = null;
+
+if (API_KEY) {
+  try {
+    ai = new GoogleGenAI(API_KEY);
+  } catch (e) {
+    console.error("Erreur d'initialisation de GoogleGenAI:", e);
+  }
+}
+
 
 // ... (remaining of the file)
 
@@ -207,19 +227,25 @@ export default function App() {
 
       setExtractStep("Envoi à l'IA...");
       
-      const fetchPromise = ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: {
-          parts: [
-            {
-              inlineData: { mimeType: mimeType, data: base64 },
-            },
-            {
-              text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. If date is not in that format, translate it. dateSaisie is the date next to 'Colmar le'. numeroBon is the bon number. Other fields: demandeur, refBatiment, lieu, etage, piece, demande, description, atelier. Output the response strictly as a JSON object matching this structure. Always provide an empty string if a field is not found.",
-            },
-          ],
-        },
-        config: {
+      if (!ai) {
+        throw new Error("L'IA n'est pas configurée. Veuillez ajouter votre GEMINI_API_KEY dans les paramètres Vercel.");
+      }
+      
+      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const fetchPromise = model.generateContent({
+        contents: [
+          {
+            parts: [
+              {
+                inlineData: { mimeType: mimeType, data: base64 },
+              },
+              {
+                text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. If date is not in that format, translate it. dateSaisie is the date next to 'Colmar le'. numeroBon is the bon number. Other fields: demandeur, refBatiment, lieu, etage, piece, demande, description, atelier. Output the response strictly as a JSON object matching this structure. Always provide an empty string if a field is not found.",
+              },
+            ],
+          },
+        ],
+        generationConfig: {
           responseMimeType: "application/json",
           responseSchema: {
             // ... (keep structure identical)
@@ -245,6 +271,7 @@ export default function App() {
           },
         },
       });
+
 
       const timeoutPromise = new Promise<GenerateContentResponse>((_, reject) => 
         setTimeout(() => reject(new Error("Le serveur IA met trop de temps à répondre (Time-Out). Vérifiez votre connexion internet.")), 30000)
