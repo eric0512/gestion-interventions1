@@ -15,7 +15,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// import { GoogleGenerativeAI } from "@google/generative-ai"; // On passe en fetch direct pour plus de fiabilité
 import { Trash2 } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 
@@ -30,7 +30,8 @@ let ai: any = null;
 
 if (API_KEY) {
   try {
-    ai = new GoogleGenerativeAI(API_KEY);
+    // ai = new GoogleGenerativeAI(API_KEY); // Non utilisé en mode direct
+    ai = true; // Juste pour passer le check plus bas
   } catch (e) {
     console.error("Erreur d'initialisation de GoogleGenAI:", e);
   }
@@ -227,34 +228,39 @@ export default function App() {
         throw new Error("L'IA n'est pas configurée. Veuillez ajouter votre VITE_GEMINI_API_KEY dans les paramètres Vercel.");
       }
       
-      const model = ai.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        generationConfig: {
-          responseMimeType: "application/json",
-        }
-      }, { apiVersion: 'v1beta' });
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
       
-      const fetchPromise = model.generateContent([
-        {
-          inlineData: { mimeType: mimeType, data: base64 },
-        },
-        {
-          text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. Output the response strictly as a JSON object with these keys: dateSaisie, numeroBon, demandeur, refBatiment, dateDemande, dateDevis, lieu, etage, piece, demande, description, atelier, dateExecution, travauxRealises, tempsPasse, nomIntervenant.",
-        },
-      ]);
+      const payload = {
+        contents: [{
+          parts: [
+            { inlineData: { mimeType: mimeType, data: base64 } },
+            { text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. Output the response strictly as a JSON object with these keys: dateSaisie, numeroBon, demandeur, refBatiment, dateDemande, dateDevis, lieu, etage, piece, demande, description, atelier, dateExecution, travauxRealises, tempsPasse, nomIntervenant." }
+          ]
+        }],
+        generationConfig: { responseMimeType: "application/json" }
+      };
 
-
-
+      const fetchPromise = fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
       const timeoutPromise = new Promise<any>((_, reject) => 
         setTimeout(() => reject(new Error("Le serveur IA met trop de temps à répondre (Time-Out). Vérifiez votre connexion internet.")), 30000)
       );
 
-      const result = await Promise.race([fetchPromise, timeoutPromise]);
-      const response = result.response;
+      const responseRaw: any = await Promise.race([fetchPromise, timeoutPromise]);
+      
+      if (!responseRaw.ok) {
+        const errorText = await responseRaw.text();
+        throw new Error(errorText);
+      }
+
+      const result = await responseRaw.json();
       console.log("[Diagnostic] Réponse reçue de l'IA !");
 
-      const responseText = response.text();
+      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (responseText) {
         let text = responseText.trim();
         if (text.startsWith("```json")) text = text.replace(/^```json/, "");
@@ -406,7 +412,7 @@ export default function App() {
         <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
           <button onClick={() => setView('menu')} className="text-blue-200 hover:text-white text-sm">← Retour</button>
           <div>
-            <h1 className="text-lg md:text-xl font-bold tracking-tight uppercase leading-tight">Saisie d'une demande (V3)</h1>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight uppercase leading-tight">Saisie d'une demande (V4-DIRECT)</h1>
             <p className="text-[10px] md:text-xs text-blue-200 uppercase tracking-widest">Maintenance</p>
           </div>
         </div>
