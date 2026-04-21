@@ -231,7 +231,7 @@ export default function App() {
       }
       
       const fetchPromise = ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         contents: [
           {
             parts: [
@@ -306,7 +306,21 @@ export default function App() {
       }
     } catch (error: any) {
       console.error("Extraction error:", error);
-      setExtractionError(error?.message || "Erreur de connexion lors du traitement.");
+      let errorMessage = error?.message || "Erreur de connexion lors du traitement.";
+      
+      // Essayer de rendre le message plus lisible si c'est du JSON d'erreur Google
+      try {
+        if (errorMessage.includes('{')) {
+          const start = errorMessage.indexOf('{');
+          const jsonStr = errorMessage.substring(start);
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.error && parsed.error.message) {
+            errorMessage = parsed.error.message;
+          }
+        }
+      } catch (e) {}
+
+      setExtractionError(errorMessage);
     } finally {
       setIsExtracting(false);
     }
