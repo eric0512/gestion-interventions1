@@ -238,7 +238,7 @@ export default function App() {
         }
       } catch (e) { availableModels = "erreur lors du listage"; }
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
       
       const payload = {
         contents: [{
@@ -320,17 +320,19 @@ export default function App() {
       console.error("Extraction error:", error);
       let errorMessage = error?.message || "Erreur de connexion lors du traitement.";
       
-      // Essayer de rendre le message plus lisible si c'est du JSON d'erreur Google
-      try {
-        if (errorMessage.includes('{')) {
-          const start = errorMessage.indexOf('{');
-          const jsonStr = errorMessage.substring(start);
-          const parsed = JSON.parse(jsonStr);
-          if (parsed.error && parsed.error.message) {
-            errorMessage = parsed.error.message;
+      // NE PAS écraser si c'est notre message de diagnostic
+      if (!errorMessage.includes("Modèles disponibles:")) {
+        try {
+          if (errorMessage.includes('{')) {
+            const start = errorMessage.indexOf('{');
+            const jsonStr = errorMessage.substring(start);
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.error && parsed.error.message) {
+              errorMessage = parsed.error.message;
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
 
       setExtractionError(errorMessage);
     } finally {
