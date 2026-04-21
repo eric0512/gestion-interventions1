@@ -26,7 +26,7 @@ declare global {
 
 // Détection de la clé API (Injection forcée via Vite)
 const API_KEY = typeof __APP_GEMINI_KEY__ !== 'undefined' ? __APP_GEMINI_KEY__ : "";
-console.log("Diagnostic Clé API :", API_KEY ? `Détectée (longueur: ${API_KEY.length})` : "NON DÉTECTÉE");
+console.log("DIAGNOSTIC FINAL V5 :", API_KEY ? `Détectée (longueur: ${API_KEY.length})` : "NON DÉTECTÉE");
 
 let ai: any = null;
 
