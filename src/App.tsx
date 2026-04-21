@@ -552,13 +552,8 @@ export default function App() {
           Recherche d'intervention <span className="text-xl">→</span>
         </button>
       </div>
-      <div className="mt-8 pt-4 border-t border-slate-100">
-        <button 
-          onClick={runDiagnostic}
-          className="w-full text-center py-2 text-xs text-slate-400 hover:text-slate-600 font-medium italic underline underline-offset-4"
-        >
-          {diagResult || "Effectuer un diagnostic de l'IA"}
-        </button>
+      <div className="mt-8 pt-4 border-t border-slate-100 flex justify-center">
+        <p className="text-[10px] text-slate-300 uppercase tracking-widest font-medium">Système de maintenance v2.0</p>
       </div>
     </div>
   );
@@ -590,19 +585,19 @@ export default function App() {
                  }
                }} className="hidden" id="photo-upload-gallery" />
                
-               <div className="flex gap-2 flex-col sm:flex-row w-full">
-                 <label htmlFor="photo-upload-camera" className={`flex-1 text-center cursor-pointer bg-blue-700 hover:bg-blue-800 text-white px-3 py-2 rounded text-xs md:text-sm font-bold flex items-center justify-center gap-2 ${isExtracting ? 'opacity-50 pointer-events-none' : ''}`}>
+               <div className="flex gap-2 w-full sm:w-auto">
+                 <label htmlFor="photo-upload-camera" className={`flex-1 sm:flex-none cursor-pointer bg-white/10 hover:bg-white/20 active:scale-95 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-white/20 transition-all ${isExtracting ? 'opacity-50 pointer-events-none' : ''}`}>
                    <span className="text-lg">📷</span>
-                   {isExtracting ? (extractStep || 'Analyse...') : 'Appareil photo'}
+                   {isExtracting ? (extractStep || '...') : 'Photo'}
                  </label>
-                 <label htmlFor="photo-upload-gallery" className={`flex-1 text-center cursor-pointer bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded text-xs md:text-sm font-bold flex items-center justify-center gap-2 ${isExtracting ? 'opacity-50 pointer-events-none' : ''}`}>
+                 <label htmlFor="photo-upload-gallery" className={`flex-1 sm:flex-none cursor-pointer bg-white/10 hover:bg-white/20 active:scale-95 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-white/20 transition-all ${isExtracting ? 'opacity-50 pointer-events-none' : ''}`}>
                    <span className="text-lg">🖼️</span>
-                   {isExtracting ? '...' : 'Photothèque'}
+                   {isExtracting ? '...' : 'Galerie'}
                  </label>
                </div>
              </>
            )}
-           <button onClick={handleSave} className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-3 md:px-4 py-2 rounded text-xs md:text-sm font-bold">Sauvegarder</button>
+           <button onClick={handleSave} className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-blue-950 px-6 py-2 rounded-lg text-xs font-black uppercase tracking-tight shadow-xl shadow-emerald-500/20 transition-all border-b-4 border-emerald-700 hover:border-emerald-600 active:border-b-0">Sauvegarder</button>
         </div>
       </header>
       
