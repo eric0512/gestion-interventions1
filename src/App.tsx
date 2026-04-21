@@ -32,7 +32,7 @@ if (API_KEY) {
   try {
     ai = new GoogleGenAI({ 
       apiKey: API_KEY,
-      apiVersion: 'v1'
+      apiVersion: 'v1beta'
     });
   } catch (e) {
     console.error("Erreur d'initialisation de GoogleGenAI:", e);
