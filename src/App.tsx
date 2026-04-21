@@ -53,6 +53,17 @@ const getTodayFormatted = () => {
   return `${year}-${month}-${day}`;
 };
 
+const isDateOlderThan30Days = (dateStr: string) => {
+  if (!dateStr) return false;
+  const date = new Date(dateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+  const diffTime = today.getTime() - date.getTime();
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  return diffDays > 30;
+};
+
 export default function App() {
   const [view, setView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche'>(() => {
     return (sessionStorage.getItem('app_view') as any) || 'menu';
@@ -773,7 +784,9 @@ export default function App() {
                   onClick={() => openForm(i)} 
                   className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-blue-900 hover:text-blue-700'}`}
                 >
-                  <div className="text-base">{i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}</div>
+                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis) ? 'text-red-600' : ''}`}>
+                    {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
+                  </div>
                   {i.passages && i.passages.length > 1 ? (
                     <div className="text-xs text-slate-500 font-normal mt-1">Intervenants : {i.passages.length} passages enregistrés</div>
                   ) : (i.nomIntervenant && (
@@ -880,7 +893,9 @@ export default function App() {
                   onClick={() => openForm(i)} 
                   className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-blue-900 hover:text-blue-700'}`}
                 >
-                  <div className="text-base">{i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}</div>
+                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis) ? 'text-red-600' : ''}`}>
+                    {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
+                  </div>
                   {i.passages && i.passages.length > 1 ? (
                     <div className="text-xs text-slate-500 font-normal mt-1">Intervenants : {i.passages.length} passages enregistrés</div>
                   ) : (i.nomIntervenant && (
