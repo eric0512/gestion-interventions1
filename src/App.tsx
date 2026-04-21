@@ -53,15 +53,19 @@ const getTodayFormatted = () => {
   return `${year}-${month}-${day}`;
 };
 
-const isDateOlderThan30Days = (dateStr: string) => {
-  if (!dateStr) return false;
+const getDaysElapsed = (dateStr: string) => {
+  if (!dateStr) return 0;
   const date = new Date(dateStr);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   date.setHours(0, 0, 0, 0);
   const diffTime = today.getTime() - date.getTime();
-  const diffDays = diffTime / (1000 * 60 * 60 * 24);
-  return diffDays > 30;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
+const isDateOlderThan30Days = (dateStr: string) => {
+  return getDaysElapsed(dateStr) > 30;
 };
 
 export default function App() {
@@ -947,7 +951,7 @@ export default function App() {
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
                     {isDateOlderThan30Days(i.dateDevis) && (
                       <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard
+                        En retard (+{getDaysElapsed(i.dateDevis)}j)
                       </span>
                     )}
                   </div>
@@ -1061,7 +1065,7 @@ export default function App() {
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
                     {isDateOlderThan30Days(i.dateDevis) && (
                       <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard
+                        En retard (+{getDaysElapsed(i.dateDevis)}j)
                       </span>
                     )}
                   </div>
