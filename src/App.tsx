@@ -329,11 +329,12 @@ export default function App() {
         throw new Error("La clé API Gemini n'est pas configurée.");
       }
       
-      // Liste des modèles valides (le premier est le plus rapide et économique)
+      // Liste des modèles très standards
       const modelsToTry = [
         "gemini-1.5-flash",
+        "gemini-1.5-flash-8b",
         "gemini-1.5-pro",
-        "gemini-2.0-flash-exp"
+        "gemini-pro-vision"
       ];
 
       let lastError: any = null;
@@ -351,7 +352,7 @@ export default function App() {
           console.log(`[IA] Tentative ${i + 1} avec : ${modelName}...`);
           setExtractStep(`Analyse (${modelName})...`);
 
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
+          const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${API_KEY}`;
           
           const payload = {
             contents: [{
@@ -360,7 +361,8 @@ export default function App() {
                 { text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. Output the response strictly as a JSON object with these keys: dateSaisie, numeroBon, demandeur, refBatiment, dateDemande, dateDevis, lieu, etage, piece, demande, description, atelier, dateExecution, travauxRealises, tempsPasse, nomIntervenant." }
               ]
             }],
-            generationConfig: { response_mime_type: "application/json" }
+            // Pas de response_mime_type ici pour rester en v1 sans erreur
+            generationConfig: { }
           };
 
           const fetchPromise = fetch(url, {
