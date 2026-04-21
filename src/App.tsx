@@ -437,11 +437,11 @@ export default function App() {
             return newData;
           });
         } catch (parseError: any) {
-          console.error("JSON Parse Error:", parseError, "Text:", response.text);
+          console.error("JSON Parse Error:", parseError, "Text:", text);
           setExtractionError("Erreur de lecture du format de données renvoyé par l'IA.");
         }
       } else {
-        console.error("Empty response from AI", response);
+        console.error("Empty response from AI", result);
         setExtractionError("Erreur technique : Le serveur IA n'a répondu aucun texte.");
       }
     } catch (error: any) {
@@ -1092,7 +1092,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6 font-sans text-slate-800">
+    <div className="min-h-screen bg-slate-200 p-6 font-sans text-slate-800">
       <div className="max-w-4xl mx-auto">
         {view === 'menu' && renderMenu()}
         {view === 'saisie' && renderSaisie()}
