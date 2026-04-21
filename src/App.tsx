@@ -513,16 +513,16 @@ export default function App() {
   };
 
   const renderMenu = () => (
-    <div className="w-full max-w-lg bg-white shadow-xl border border-slate-200 rounded-lg p-8">
-      <div className="flex justify-between items-center mb-8 border-b border-slate-100 pb-4">
-        <h1 className="text-3xl font-bold text-blue-900">Gestion des Interventions</h1>
+    <div className="w-full max-w-lg bg-white shadow-2xl border border-slate-300 rounded-lg p-8">
+      <div className="flex justify-between items-center mb-8 border-b-2 border-amber-500 pb-4">
+        <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Maintenance <span className="text-amber-500">Pro</span></h1>
         <div className="flex items-center gap-2">
           {syncStatus === 'synced' && (
             <button onClick={fetchInterventions} title="Synchronisé - Cliquez pour rafraîchir">
               <Cloud size={20} className="text-emerald-500 hover:text-emerald-600 transition-colors" />
             </button>
           )}
-          {syncStatus === 'syncing' && <RefreshCw size={20} className="text-blue-500 animate-spin" title="Synchronisation..." />}
+          {syncStatus === 'syncing' && <RefreshCw size={20} className="text-amber-500 animate-spin" title="Synchronisation..." />}
           {syncStatus === 'error' && (
             <button onClick={fetchInterventions} title="Erreur - Cliquez pour réessayer">
               <CloudOff size={20} className="text-red-500 hover:text-red-600 transition-colors" />
@@ -534,15 +534,15 @@ export default function App() {
       <div className="space-y-6 pb-2">
         <button 
           onClick={() => openForm()} 
-          className="w-full text-left px-6 py-4 bg-blue-50 text-blue-900 font-bold rounded-xl flex items-center justify-between border-2 border-blue-200 shadow-[0_6px_0_0_#bfdbfe] hover:bg-blue-100 hover:shadow-[0_4px_0_0_#bfdbfe] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#bfdbfe] active:translate-y-[6px] transition-all duration-150"
+          className="w-full text-left px-6 py-5 bg-amber-400 text-black font-black rounded-xl flex items-center justify-between border-2 border-amber-500 shadow-[0_6px_0_0_#d97706] hover:bg-amber-300 hover:shadow-[0_4px_0_0_#d97706] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#d97706] active:translate-y-[6px] transition-all duration-150 uppercase tracking-tight"
         >
-          Saisie des interventions <span className="text-xl">→</span>
+          Saisie des interventions <span className="text-2xl">→</span>
         </button>
         <button 
           onClick={() => setView('consultation')} 
-          className="w-full text-left px-6 py-4 bg-slate-50 text-slate-800 font-bold rounded-xl flex items-center justify-between border-2 border-slate-200 shadow-[0_6px_0_0_#cbd5e1] hover:bg-slate-100 hover:shadow-[0_4px_0_0_#cbd5e1] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#cbd5e1] active:translate-y-[6px] transition-all duration-150"
+          className="w-full text-left px-6 py-5 bg-slate-800 text-white font-black rounded-xl flex items-center justify-between border-2 border-slate-900 shadow-[0_6px_0_0_#0f172a] hover:bg-slate-700 hover:shadow-[0_4px_0_0_#0f172a] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#0f172a] active:translate-y-[6px] transition-all duration-150 uppercase tracking-tight"
         >
-          Consultation des interventions <span className="text-xl">→</span>
+          Consultation des interventions <span className="text-2xl">→</span>
         </button>
         <button 
           onClick={() => {
@@ -551,25 +551,25 @@ export default function App() {
             setSearchEndDate(getTodayFormatted());
             setView('recherche');
           }} 
-          className="w-full text-left px-6 py-4 bg-emerald-50 text-emerald-900 font-bold rounded-xl flex items-center justify-between border-2 border-emerald-200 shadow-[0_6px_0_0_#a7f3d0] hover:bg-emerald-100 hover:shadow-[0_4px_0_0_#a7f3d0] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#a7f3d0] active:translate-y-[6px] transition-all duration-150"
+          className="w-full text-left px-6 py-5 bg-slate-100 text-slate-800 font-black rounded-xl flex items-center justify-between border-2 border-slate-300 shadow-[0_6px_0_0_#94a3b8] hover:bg-slate-200 hover:shadow-[0_4px_0_0_#94a3b8] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#94a3b8] active:translate-y-[6px] transition-all duration-150 uppercase tracking-tight"
         >
-          Recherche d'intervention <span className="text-xl">→</span>
+          Recherche d'intervention <span className="text-2xl">→</span>
         </button>
       </div>
-      <div className="mt-8 pt-4 border-t border-slate-100 flex justify-center">
-        <p className="text-[10px] text-slate-300 uppercase tracking-widest font-medium">Système de maintenance v2.0</p>
+      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-center">
+        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Système Industriel v2.5</p>
       </div>
     </div>
   );
 
   const renderSaisie = () => (
-    <div className="w-full max-w-4xl bg-white shadow-xl border border-slate-200 rounded-lg overflow-hidden">
-      <header className="bg-blue-900 text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left">
+    <div className="w-full max-w-4xl bg-white shadow-2xl border border-slate-300 rounded-lg overflow-hidden">
+      <header className="bg-slate-900 text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b-4 border-amber-500">
         <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
-          <button onClick={() => setView('menu')} className="text-blue-200 hover:text-white text-sm">← Retour</button>
+          <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm transition-colors">← MENU</button>
           <div>
-            <h1 className="text-lg md:text-xl font-bold tracking-tight uppercase leading-tight">Saisie d'une demande</h1>
-            <p className="text-[10px] md:text-xs text-blue-200 uppercase tracking-widest">Maintenance</p>
+            <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">Saisie d'intervention</h1>
+            <p className="text-[10px] md:text-xs text-amber-500 font-black uppercase tracking-widest">Maintenance Control</p>
           </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
@@ -601,7 +601,7 @@ export default function App() {
                </div>
              </>
            )}
-           <button onClick={handleSave} className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-blue-950 px-6 py-2 rounded-lg text-xs font-black uppercase tracking-tight shadow-xl shadow-emerald-500/20 transition-all border-b-4 border-emerald-700 hover:border-emerald-600 active:border-b-0">Sauvegarder</button>
+           <button onClick={handleSave} className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-400 active:scale-95 text-black px-6 py-2 rounded font-black uppercase tracking-tight shadow-xl shadow-amber-500/20 transition-all border-b-4 border-amber-700 hover:border-amber-600 active:border-b-0">Sauvegarder</button>
         </div>
       </header>
       
@@ -615,25 +615,25 @@ export default function App() {
       <form className="p-8 space-y-8">
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-blue-900 border-b border-blue-100 pb-1 mb-3 uppercase tracking-wider">Données Administratives</h3>
+            <h3 className="text-xs font-black text-slate-900 border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Données Administratives</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase">Colmar le</label>
-                <input name="dateSaisie" value={formData.dateSaisie} onChange={handleChange} type="date" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" />
+                <input name="dateSaisie" value={formData.dateSaisie} onChange={handleChange} type="date" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase">N° de bon</label>
-                <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" />
+                <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 font-bold" />
               </div>
             </div>
-            <h3 className="text-xs font-bold text-blue-900 border-b border-blue-100 pb-1 mb-3 uppercase tracking-wider">Informations Demandeur</h3>
+            <h3 className="text-xs font-black text-slate-900 border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Informations Demandeur</h3>
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase">Demandeur</label>
-              <input name="demandeur" value={formData.demandeur} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" />
+              <input name="demandeur" value={formData.demandeur} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase">Référence Bâtiment</label>
-              <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" />
+              <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -649,7 +649,7 @@ export default function App() {
                     }
                   }}
                   type="date" 
-                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" 
+                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" 
                 />
               </div>
               <div>
@@ -666,25 +666,25 @@ export default function App() {
                     }
                   }}
                   type="date" 
-                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" 
+                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" 
                 />
               </div>
             </div>
           </div>
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-blue-900 border-b border-blue-100 pb-1 mb-3 uppercase tracking-wider">Localisation</h3>
+            <h3 className="text-xs font-black text-slate-900 border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Localisation</h3>
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase">Lieu</label>
-              <input name="lieu" value={formData.lieu} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" />
+              <input name="lieu" value={formData.lieu} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase">Étage</label>
-                <input name="etage" value={formData.etage} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" />
+                <input name="etage" value={formData.etage} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase">Pièce</label>
-                <input name="piece" value={formData.piece} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" />
+                <input name="piece" value={formData.piece} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
               </div>
             </div>
           </div>
@@ -694,23 +694,23 @@ export default function App() {
         </section>
 
         <section className="border-t border-slate-200 pt-8 mt-8">
-          <h3 className="text-xs font-bold text-blue-900 border-b border-blue-100 pb-1 mb-3 uppercase tracking-wider">Détails de l'Intervention</h3>
+          <h3 className="text-xs font-black text-slate-900 border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Détails de l'Intervention</h3>
           <div className="mb-4">
             <label className="block text-[10px] font-bold text-slate-500 uppercase">Demande</label>
-            <input name="demande" value={formData.demande} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" />
+            <input name="demande" value={formData.demande} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 font-bold" />
           </div>
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase">Description de l'intervention</label>
-            <textarea name="description" value={formData.description} onChange={handleChange} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50 h-24 resize-none" />
+            <textarea name="description" value={formData.description} onChange={handleChange} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 h-24 resize-none" />
           </div>
         </section>
 
         {currentId && (
           <section className="border-t border-slate-200 pt-8 mt-8">
-            <div className="flex justify-between items-center border-b border-blue-100 pb-1 mb-3">
-              <h3 className="text-xs font-bold text-blue-900 uppercase tracking-wider">Retour de fiche / Passages</h3>
+            <div className="flex justify-between items-center border-b-2 border-amber-500 pb-1 mb-3">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Retour de fiche / Passages</h3>
               {formData.passages && formData.passages.length > 0 && (
-                 <button type="button" onClick={addPassage} className="text-xs font-bold text-blue-600 hover:text-blue-800">
+                 <button type="button" onClick={addPassage} className="text-xs font-black text-amber-600 hover:text-amber-700 uppercase tracking-tighter">
                    + Ajouter un passage
                  </button>
               )}
@@ -737,7 +737,7 @@ export default function App() {
                         min={formData.dateSaisie} 
                         onChange={(e) => handlePassageChange(passage.id, 'dateExecution', e.target.value)} 
                         onFocus={() => { if (!passage.dateExecution && formData.dateSaisie) handlePassageChange(passage.id, 'dateExecution', formData.dateSaisie) }} 
-                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white" 
+                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white" 
                       />
                     </div>
                     <div>
@@ -748,7 +748,7 @@ export default function App() {
                         onChange={(e) => handlePassageChange(passage.id, 'tempsPasse', e.target.value)} 
                         type="text" 
                         placeholder="ex: 02h30" 
-                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white" 
+                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold" 
                       />
                     </div>
                   </div>
@@ -758,7 +758,7 @@ export default function App() {
                     <select 
                       value={passage.nomIntervenant} 
                       onChange={(e) => handlePassageChange(passage.id, 'nomIntervenant', e.target.value)} 
-                      className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white"
+                      className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold"
                     >
                       <option value="Christophe Meyer">Christophe Meyer</option>
                       <option value="Autre">Autre...</option>
@@ -770,7 +770,7 @@ export default function App() {
                     <textarea 
                       value={passage.travauxRealises} 
                       onChange={(e) => handlePassageChange(passage.id, 'travauxRealises', e.target.value)} 
-                      className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white h-24 resize-none" 
+                      className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white h-24 resize-none" 
                     />
                   </div>
                   
@@ -781,7 +781,7 @@ export default function App() {
                          id={`nouveauPassage-${passage.id}`} 
                          checked={passage.nouveauPassageRequis} 
                          onChange={(e) => handlePassageChange(passage.id, 'nouveauPassageRequis', e.target.checked)} 
-                         className="rounded text-blue-600 focus:ring-blue-500 cursor-pointer" 
+                         className="rounded text-amber-600 focus:ring-amber-500 cursor-pointer" 
                        />
                        <label htmlFor={`nouveauPassage-${passage.id}`} className="text-sm font-bold text-slate-700 cursor-pointer">
                          Obligation d'un autre passage ?
@@ -794,7 +794,7 @@ export default function App() {
                            <select 
                              value={passage.raisonNouveauPassage} 
                              onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)} 
-                             className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50"
+                             className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 font-bold"
                            >
                               <option value="Demande de devis">Demande de devis</option>
                               <option value="Pièce(s) manquante(s)">Pièce(s) manquante(s)</option>
@@ -810,7 +810,7 @@ export default function App() {
                                type="text" 
                                value={passage.autreRaison} 
                                onChange={(e) => handlePassageChange(passage.id, 'autreRaison', e.target.value)} 
-                               className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" 
+                               className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-amber-500 outline-none bg-slate-50" 
                              />
                            </div>
                          )}
@@ -838,7 +838,7 @@ export default function App() {
         <section className="border-t border-slate-200 pt-8">
           <div className="mb-6">
             <label className="block text-[10px] font-bold text-slate-500 uppercase">Atelier</label>
-            <input name="atelier" value={formData.atelier} onChange={handleChange} type="text" className="w-full md:w-1/2 border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50" />
+            <input name="atelier" value={formData.atelier} onChange={handleChange} type="text" className="w-full md:w-1/2 border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
           </div>
           {currentId && (
             <div 
@@ -869,9 +869,9 @@ export default function App() {
             <h2 className="text-lg font-bold mb-4">Signature</h2>
             <SignatureCanvas ref={sigCanvas} penColor='black' canvasProps={{width: 300, height: 150, className: 'border border-slate-300 rounded bg-slate-50'}} />
             <div className="flex gap-4 mt-4">
-              <button type="button" onClick={() => setSigningId(null)} className="bg-slate-200 px-4 py-2 rounded font-bold">Annuler</button>
-              <button type="button" onClick={() => sigCanvas.current?.clear()} className="bg-slate-200 px-4 py-2 rounded font-bold">Effacer</button>
-              <button type="button" onClick={() => saveSignature(signingId)} className="bg-blue-600 text-white px-4 py-2 rounded font-bold">Sauvegarder</button>
+              <button type="button" onClick={() => setSigningId(null)} className="bg-slate-200 px-4 py-2 rounded font-bold hover:bg-slate-300 transition-colors">Annuler</button>
+              <button type="button" onClick={() => sigCanvas.current?.clear()} className="bg-slate-200 px-4 py-2 rounded font-bold hover:bg-slate-300 transition-colors">Effacer</button>
+              <button type="button" onClick={() => saveSignature(signingId)} className="bg-slate-900 text-white px-4 py-2 rounded font-bold hover:bg-slate-800 transition-colors">Sauvegarder</button>
             </div>
           </div>
         </div>
@@ -920,20 +920,20 @@ export default function App() {
     );
     
     return (
-      <div className="w-full max-w-4xl bg-white shadow-xl border border-slate-200 rounded-lg p-8 relative">
-        <button onClick={() => setView('menu')} className="text-slate-500 hover:text-blue-900 text-sm mb-4">← Retour au menu</button>
-        <h1 className="text-2xl font-bold text-blue-900 mb-6 uppercase tracking-tight">Consultation des interventions</h1>
+      <div className="w-full max-w-4xl bg-white shadow-2xl border border-slate-300 rounded-lg p-8 relative">
+        <button onClick={() => setView('menu')} className="text-slate-500 hover:text-amber-600 font-bold text-sm mb-4 transition-colors">← RETOUR MENU</button>
+        <h1 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tighter border-b-4 border-amber-500 inline-block">Consultation</h1>
         
         <div className="flex gap-2 mb-6 border-b border-slate-200 pb-4">
           <button 
             onClick={() => setConsultationTab('enCours')}
-            className={`px-4 py-2 rounded font-bold text-sm transition-colors ${consultationTab === 'enCours' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`px-4 py-2 rounded font-black text-xs uppercase tracking-widest transition-colors ${consultationTab === 'enCours' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             Interventions en cours
           </button>
           <button 
             onClick={() => setConsultationTab('archivees')}
-            className={`px-4 py-2 rounded font-bold text-sm transition-colors ${consultationTab === 'archivees' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`px-4 py-2 rounded font-black text-xs uppercase tracking-widest transition-colors ${consultationTab === 'archivees' ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             Interventions archivées
           </button>
@@ -945,7 +945,7 @@ export default function App() {
               <div className='flex justify-between items-center mb-2'>
                 <button 
                   onClick={() => openForm(i)} 
-                  className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-blue-900 hover:text-blue-700'}`}
+                  className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
                   <div className={`text-base ${isDateOlderThan30Days(i.dateDevis) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
@@ -1006,9 +1006,9 @@ export default function App() {
     });
 
     return (
-      <div className="w-full max-w-4xl bg-white shadow-xl border border-slate-200 rounded-lg p-8 relative">
-        <button onClick={() => setView('menu')} className="text-slate-500 hover:text-blue-900 text-sm mb-4">← Retour au menu</button>
-        <h1 className="text-2xl font-bold text-blue-900 mb-6 uppercase tracking-tight">Recherche d'intervention</h1>
+      <div className="w-full max-w-4xl bg-white shadow-2xl border border-slate-300 rounded-lg p-8 relative">
+        <button onClick={() => setView('menu')} className="text-slate-500 hover:text-amber-600 font-bold text-sm mb-4 transition-colors">← RETOUR MENU</button>
+        <h1 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tighter border-b-4 border-amber-500 inline-block">Recherche</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="md:col-span-2">
@@ -1019,7 +1019,7 @@ export default function App() {
               placeholder="Entrez ou sélectionnez un N° de bon..." 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
-              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold"
             />
             <datalist id="bon-list">
               {uniqueBons.map((bon: any) => (
@@ -1033,7 +1033,7 @@ export default function App() {
               type="date" 
               value={searchStartDate} 
               onChange={(e) => setSearchStartDate(e.target.value)} 
-              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-amber-500 outline-none bg-white"
             />
           </div>
           <div>
@@ -1042,7 +1042,7 @@ export default function App() {
               type="date" 
               value={searchEndDate} 
               onChange={(e) => setSearchEndDate(e.target.value)} 
-              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-amber-500 outline-none bg-white"
             />
           </div>
         </div>
@@ -1059,7 +1059,7 @@ export default function App() {
               <div className='flex justify-between items-center mb-2'>
                 <button 
                   onClick={() => openForm(i)} 
-                  className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-blue-900 hover:text-blue-700'}`}
+                  className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
                   <div className={`text-base ${isDateOlderThan30Days(i.dateDevis) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
@@ -1092,7 +1092,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 font-sans text-slate-800">
+    <div className="min-h-screen bg-slate-100 p-6 font-sans text-slate-800">
       <div className="max-w-4xl mx-auto">
         {view === 'menu' && renderMenu()}
         {view === 'saisie' && renderSaisie()}
