@@ -15,9 +15,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
-// import { GoogleGenerativeAI } from "@google/generative-ai"; // On passe en fetch direct pour plus de fiabilité
-import { Trash2 } from 'lucide-react';
+import { Trash2, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
+import { supabase } from './supabaseClient';
 
 // Déclaration pour TypeScript
 declare global {
@@ -123,7 +123,38 @@ export default function App() {
   const [extractStep, setExtractStep] = useState<string | null>(null);
   const [extractionError, setExtractionError] = useState<string | null>(null);
   const [signingId, setSigningId] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('offline');
   const sigCanvas = useRef<any>(null);
+
+  // Chargement initial depuis Supabase
+  useEffect(() => {
+    const fetchInterventions = async () => {
+      if (!import.meta.env.VITE_SUPABASE_URL) {
+        setSyncStatus('offline');
+        return;
+      }
+
+      setSyncStatus('syncing');
+      try {
+        const { data, error } = await supabase
+          .from('interventions')
+          .select('*')
+          .order('dateSaisie', { ascending: false });
+
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          setInterventions(data);
+        }
+        setSyncStatus('synced');
+      } catch (err) {
+        console.error("Erreur de synchronisation initiale:", err);
+        setSyncStatus('error');
+      }
+    };
+
+    fetchInterventions();
+  }, []);
 
   useEffect(() => {
     sessionStorage.setItem('app_view', view);
@@ -144,6 +175,24 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('interventions', JSON.stringify(interventions));
   }, [interventions]);
+
+  // Fonction de synchronisation unitaire
+  const syncIntervention = async (item: any) => {
+    if (!import.meta.env.VITE_SUPABASE_URL) return;
+    
+    setSyncStatus('syncing');
+    try {
+      const { error } = await supabase
+        .from('interventions')
+        .upsert(item);
+      
+      if (error) throw error;
+      setSyncStatus('synced');
+    } catch (err) {
+      console.error("Erreur de sauvegarde Supabase:", err);
+      setSyncStatus('error');
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -188,11 +237,16 @@ export default function App() {
       dataToSave.travauxRealises = dataToSave.passages[0].travauxRealises;
     }
 
+    const newId = currentId || Date.now().toString();
+    const itemToSync = { ...dataToSave, id: newId };
+
     if (currentId) {
-      setInterventions(interventions.map((i: any) => i.id === currentId ? { ...dataToSave, id: currentId } : i));
+      setInterventions(interventions.map((i: any) => i.id === currentId ? itemToSync : i));
     } else {
-      setInterventions([...interventions, { ...dataToSave, id: Date.now().toString() }]);
+      setInterventions([...interventions, itemToSync]);
     }
+    
+    syncIntervention(itemToSync);
     setView('menu');
   };
 
@@ -387,7 +441,15 @@ export default function App() {
 
   const renderMenu = () => (
     <div className="w-full max-w-lg bg-white shadow-xl border border-slate-200 rounded-lg p-8">
-      <h1 className="text-3xl font-bold text-blue-900 mb-8 border-b border-slate-100 pb-4">Gestion des Interventions</h1>
+      <div className="flex justify-between items-center mb-8 border-b border-slate-100 pb-4">
+        <h1 className="text-3xl font-bold text-blue-900">Gestion des Interventions</h1>
+        <div className="flex items-center gap-2">
+          {syncStatus === 'synced' && <Cloud size={20} className="text-emerald-500" title="Synchronisé" />}
+          {syncStatus === 'syncing' && <RefreshCw size={20} className="text-blue-500 animate-spin" title="Synchronisation..." />}
+          {syncStatus === 'error' && <CloudOff size={20} className="text-red-500" title="Erreur de synchronisation" />}
+          {syncStatus === 'offline' && <CloudOff size={20} className="text-slate-400" title="Mode hors-ligne" />}
+        </div>
+      </div>
       <div className="space-y-6 pb-2">
         <button 
           onClick={() => openForm()} 
@@ -733,14 +795,31 @@ export default function App() {
     </div>
   );
 
-  const deleteIntervention = (id: string) => {
-    setInterventions(interventions.filter((i: any) => i.id !== id));
+  const deleteIntervention = async (id: string) => {
+    if (window.confirm("Voulez-vous vraiment supprimer cette intervention ?")) {
+      setInterventions(interventions.filter((i: any) => i.id !== id));
+      if (import.meta.env.VITE_SUPABASE_URL) {
+        setSyncStatus('syncing');
+        try {
+          await supabase.from('interventions').delete().eq('id', id);
+          setSyncStatus('synced');
+        } catch (e) {
+          setSyncStatus('error');
+        }
+      }
+    }
   };
 
   const saveSignature = (id: string) => {
     if (sigCanvas.current) {
       const signature = sigCanvas.current.toDataURL();
-      setInterventions(interventions.map((i: any) => i.id === id ? { ...i, signature } : i));
+      const updatedInterventions = interventions.map((i: any) => i.id === id ? { ...i, signature } : i);
+      setInterventions(updatedInterventions);
+      
+      const updatedItem = updatedInterventions.find((i: any) => i.id === id);
+      if (updatedItem) {
+        syncIntervention(updatedItem);
+      }
       
       // Update formData if it is the currently edited intervention
       if (currentId === id) {
