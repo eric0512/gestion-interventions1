@@ -406,7 +406,7 @@ export default function App() {
         <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
           <button onClick={() => setView('menu')} className="text-blue-200 hover:text-white text-sm">← Retour</button>
           <div>
-            <h1 className="text-lg md:text-xl font-bold tracking-tight uppercase leading-tight">Saisie d'une demande</h1>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight uppercase leading-tight">Saisie d'une demande (V2)</h1>
             <p className="text-[10px] md:text-xs text-blue-200 uppercase tracking-widest">Maintenance</p>
           </div>
         </div>
