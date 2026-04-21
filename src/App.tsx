@@ -124,6 +124,7 @@ export default function App() {
   const [extractionError, setExtractionError] = useState<string | null>(null);
   const [signingId, setSigningId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('offline');
+  const [diagResult, setDiagResult] = useState<string | null>(null);
   const sigCanvas = useRef<any>(null);
 
   const fetchInterventions = async () => {
@@ -209,6 +210,23 @@ export default function App() {
     } catch (err) {
       console.error("Erreur de sauvegarde Supabase:", err);
       setSyncStatus('error');
+    }
+  };
+
+  const runDiagnostic = async () => {
+    if (!API_KEY) {
+      setDiagResult("Erreur : Clé API manquante.");
+      return;
+    }
+    setDiagResult("Interrogation de Google...");
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${API_KEY}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      const models = data.models?.map((m: any) => m.name.replace('models/', '')).join(', ') || "Aucun modèle trouvé.";
+      setDiagResult(`Modèles dispos : ${models}`);
+    } catch (err: any) {
+      setDiagResult(`Échec du diagnostic : ${err.message}`);
     }
   };
 
@@ -333,7 +351,7 @@ export default function App() {
           console.log(`[IA] Tentative ${i + 1} avec : ${modelName}...`);
           setExtractStep(`Analyse (${modelName})...`);
 
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
+          const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${API_KEY}`;
           
           const payload = {
             contents: [{
@@ -531,6 +549,14 @@ export default function App() {
           className="w-full text-left px-6 py-4 bg-emerald-50 text-emerald-900 font-bold rounded-xl flex items-center justify-between border-2 border-emerald-200 shadow-[0_6px_0_0_#a7f3d0] hover:bg-emerald-100 hover:shadow-[0_4px_0_0_#a7f3d0] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#a7f3d0] active:translate-y-[6px] transition-all duration-150"
         >
           Recherche d'intervention <span className="text-xl">→</span>
+        </button>
+      </div>
+      <div className="mt-8 pt-4 border-t border-slate-100">
+        <button 
+          onClick={runDiagnostic}
+          className="w-full text-center py-2 text-xs text-slate-400 hover:text-slate-600 font-medium italic underline underline-offset-4"
+        >
+          {diagResult || "Effectuer un diagnostic de l'IA"}
         </button>
       </div>
     </div>
