@@ -21,6 +21,8 @@ import SignatureCanvas from 'react-signature-canvas';
 
 // Détection de la clé API (Norme Vite + Vercel)
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
+console.log("Diagnostic Clé API :", API_KEY ? `Détectée (longueur: ${API_KEY.length})` : "NON DÉTECTÉE");
+
 let ai: any = null;
 
 if (API_KEY) {
