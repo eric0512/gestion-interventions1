@@ -15,7 +15,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
-import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Trash2 } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 
@@ -30,10 +30,7 @@ let ai: any = null;
 
 if (API_KEY) {
   try {
-    ai = new GoogleGenAI({ 
-      apiKey: API_KEY,
-      apiVersion: 'v1beta'
-    });
+    ai = new GoogleGenerativeAI(API_KEY);
   } catch (e) {
     console.error("Erreur d'initialisation de GoogleGenAI:", e);
   }
@@ -230,37 +227,36 @@ export default function App() {
         throw new Error("L'IA n'est pas configurée. Veuillez ajouter votre VITE_GEMINI_API_KEY dans les paramètres Vercel.");
       }
       
-      const fetchPromise = ai.models.generateContent({
+      const model = ai.getGenerativeModel({ 
         model: "gemini-1.5-flash",
-        contents: [
-          {
-            parts: [
-              {
-                inlineData: { mimeType: mimeType, data: base64 },
-              },
-              {
-                text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. Output the response strictly as a JSON object with these keys: dateSaisie, numeroBon, demandeur, refBatiment, dateDemande, dateDevis, lieu, etage, piece, demande, description, atelier, dateExecution, travauxRealises, tempsPasse, nomIntervenant.",
-              },
-            ],
-          },
-        ],
         generationConfig: {
           responseMimeType: "application/json",
-        },
+        }
       });
+      
+      const fetchPromise = model.generateContent([
+        {
+          inlineData: { mimeType: mimeType, data: base64 },
+        },
+        {
+          text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. Output the response strictly as a JSON object with these keys: dateSaisie, numeroBon, demandeur, refBatiment, dateDemande, dateDevis, lieu, etage, piece, demande, description, atelier, dateExecution, travauxRealises, tempsPasse, nomIntervenant.",
+        },
+      ]);
 
 
 
 
-      const timeoutPromise = new Promise<GenerateContentResponse>((_, reject) => 
+      const timeoutPromise = new Promise<any>((_, reject) => 
         setTimeout(() => reject(new Error("Le serveur IA met trop de temps à répondre (Time-Out). Vérifiez votre connexion internet.")), 30000)
       );
 
-      const response = await Promise.race([fetchPromise, timeoutPromise]);
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+      const response = result.response;
       console.log("[Diagnostic] Réponse reçue de l'IA !");
 
-      if (response.text) {
-        let text = response.text.trim();
+      const responseText = response.text();
+      if (responseText) {
+        let text = responseText.trim();
         if (text.startsWith("```json")) text = text.replace(/^```json/, "");
         if (text.startsWith("```")) text = text.replace(/^```/, "");
         if (text.endsWith("```")) text = text.replace(/```$/, "");
@@ -410,7 +406,7 @@ export default function App() {
         <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
           <button onClick={() => setView('menu')} className="text-blue-200 hover:text-white text-sm">← Retour</button>
           <div>
-            <h1 className="text-lg md:text-xl font-bold tracking-tight uppercase leading-tight">Saisie d'une demande (v1beta)</h1>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight uppercase leading-tight">Saisie d'une demande</h1>
             <p className="text-[10px] md:text-xs text-blue-200 uppercase tracking-widest">Maintenance</p>
           </div>
         </div>
