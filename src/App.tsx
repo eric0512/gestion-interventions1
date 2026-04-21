@@ -786,6 +786,11 @@ export default function App() {
                 >
                   <div className={`text-base ${isDateOlderThan30Days(i.dateDevis) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
+                    {isDateOlderThan30Days(i.dateDevis) && (
+                      <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
+                        En retard
+                      </span>
+                    )}
                   </div>
                   {i.passages && i.passages.length > 1 ? (
                     <div className="text-xs text-slate-500 font-normal mt-1">Intervenants : {i.passages.length} passages enregistrés</div>
@@ -895,6 +900,11 @@ export default function App() {
                 >
                   <div className={`text-base ${isDateOlderThan30Days(i.dateDevis) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
+                    {isDateOlderThan30Days(i.dateDevis) && (
+                      <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
+                        En retard
+                      </span>
+                    )}
                   </div>
                   {i.passages && i.passages.length > 1 ? (
                     <div className="text-xs text-slate-500 font-normal mt-1">Intervenants : {i.passages.length} passages enregistrés</div>
