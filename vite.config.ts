@@ -10,8 +10,8 @@ export default defineConfig(({mode}) => {
     define: {
       '__APP_GEMINI_KEY__': JSON.stringify((() => {
         const key = process.env.VITE_GEMINI_API_KEY || "";
-        if (!key) {
-           console.error("CRITICAL ERROR: VITE_GEMINI_API_KEY is missing during build!");
+        if (!key || key.length < 5) {
+           throw new Error("BUILD FAILED: VITE_GEMINI_API_KEY IS NOT SET IN VERCEL SETTINGS!");
         }
         return key;
       })())
