@@ -30,7 +30,10 @@ let ai: any = null;
 
 if (API_KEY) {
   try {
-    ai = new GoogleGenAI({ apiKey: API_KEY });
+    ai = new GoogleGenAI({ 
+      apiKey: API_KEY,
+      apiVersion: 'v1'
+    });
   } catch (e) {
     console.error("Erreur d'initialisation de GoogleGenAI:", e);
   }
@@ -228,7 +231,7 @@ export default function App() {
       }
       
       const fetchPromise = ai.models.generateContent({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         contents: {
           parts: [
             {
