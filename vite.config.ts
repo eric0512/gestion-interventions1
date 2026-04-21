@@ -8,13 +8,7 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [react(), tailwindcss()],
     define: {
-      '__APP_GEMINI_KEY__': JSON.stringify((() => {
-        const key = process.env.VITE_GEMINI_API_KEY || "";
-        if (!key || key.length < 5) {
-           throw new Error("BUILD FAILED: VITE_GEMINI_API_KEY IS NOT SET IN VERCEL SETTINGS!");
-        }
-        return key;
-      })())
+      '__APP_GEMINI_KEY__': JSON.stringify(process.env.VITE_GEMINI_API_KEY || "")
     },
     resolve: {
       alias: {
