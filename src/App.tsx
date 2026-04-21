@@ -227,24 +227,21 @@ export default function App() {
         throw new Error("L'IA n'est pas configurée. Veuillez ajouter votre VITE_GEMINI_API_KEY dans les paramètres Vercel.");
       }
       
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const fetchPromise = model.generateContent({
-        contents: [
-          {
-            parts: [
-              {
-                inlineData: { mimeType: mimeType, data: base64 },
-              },
-              {
-                text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. If date is not in that format, translate it. dateSaisie is the date next to 'Colmar le'. numeroBon is the bon number. Other fields: demandeur, refBatiment, lieu, etage, piece, demande, description, atelier. Output the response strictly as a JSON object matching this structure. Always provide an empty string if a field is not found.",
-              },
-            ],
-          },
-        ],
-        generationConfig: {
+      const fetchPromise = ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: {
+          parts: [
+            {
+              inlineData: { mimeType: mimeType, data: base64 },
+            },
+            {
+              text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. If date is not in that format, translate it. dateSaisie is the date next to 'Colmar le'. numeroBon is the bon number. Other fields: demandeur, refBatiment, lieu, etage, piece, demande, description, atelier. Output the response strictly as a JSON object matching this structure. Always provide an empty string if a field is not found.",
+            },
+          ],
+        },
+        config: {
           responseMimeType: "application/json",
           responseSchema: {
-            // ... (keep structure identical)
             type: Type.OBJECT,
             properties: {
               dateSaisie: { type: Type.STRING },
@@ -267,6 +264,7 @@ export default function App() {
           },
         },
       });
+
 
 
       const timeoutPromise = new Promise<GenerateContentResponse>((_, reject) => 
