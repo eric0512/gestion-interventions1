@@ -32,7 +32,7 @@ let ai: any = null;
 
 if (API_KEY) {
   try {
-    ai = new GoogleGenAI(API_KEY);
+    ai = new GoogleGenAI({ apiKey: API_KEY });
   } catch (e) {
     console.error("Erreur d'initialisation de GoogleGenAI:", e);
   }
