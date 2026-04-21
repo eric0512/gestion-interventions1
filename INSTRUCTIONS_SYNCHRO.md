@@ -28,6 +28,10 @@ create table interventions (
   atelier text,
   passages jsonb,
   signature text,
+  "dateExecution" text,
+  "nomIntervenant" text,
+  "tempsPasse" text,
+  "travauxRealises" text,
   created_at timestamptz default now()
 );
 
