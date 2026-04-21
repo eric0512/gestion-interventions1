@@ -19,8 +19,13 @@ import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { Trash2 } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 
-// Détection de la clé API (Norme Vite + Vercel)
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
+// Déclaration pour TypeScript
+declare global {
+  const __APP_GEMINI_KEY__: string;
+}
+
+// Détection de la clé API (Injection forcée via Vite)
+const API_KEY = typeof __APP_GEMINI_KEY__ !== 'undefined' ? __APP_GEMINI_KEY__ : "";
 console.log("Diagnostic Clé API :", API_KEY ? `Détectée (longueur: ${API_KEY.length})` : "NON DÉTECTÉE");
 
 let ai: any = null;
