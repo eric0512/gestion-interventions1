@@ -228,7 +228,17 @@ export default function App() {
         throw new Error("L'IA n'est pas configurée. Veuillez ajouter votre VITE_GEMINI_API_KEY dans les paramètres Vercel.");
       }
       
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+      const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
+      let availableModels = "";
+      try {
+        const listResp = await fetch(listUrl);
+        if (listResp.ok) {
+          const listData = await listResp.json();
+          availableModels = listData.models?.map((m: any) => m.name.replace('models/', '')).join(', ') || "aucun";
+        }
+      } catch (e) { availableModels = "erreur lors du listage"; }
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
       
       const payload = {
         contents: [{
@@ -254,7 +264,7 @@ export default function App() {
       
       if (!responseRaw.ok) {
         const errorText = await responseRaw.text();
-        throw new Error(`Erreur HTTP ${responseRaw.status} sur ${url.split('?')[0]} : ${errorText}`);
+        throw new Error(`Modèles disponibles: ${availableModels}. Erreur sur ${url.split('?')[0]} : ${errorText}`);
       }
 
       const result = await responseRaw.json();
@@ -412,7 +422,7 @@ export default function App() {
         <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
           <button onClick={() => setView('menu')} className="text-blue-200 hover:text-white text-sm">← Retour</button>
           <div>
-            <h1 className="text-lg md:text-xl font-bold tracking-tight uppercase leading-tight">Saisie d'une demande (V5-DIAG)</h1>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight uppercase leading-tight">Saisie d'une demande (V6-LIST)</h1>
             <p className="text-[10px] md:text-xs text-blue-200 uppercase tracking-widest">Maintenance</p>
           </div>
         </div>
