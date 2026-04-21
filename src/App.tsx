@@ -536,7 +536,7 @@ export default function App() {
           onClick={() => openForm()} 
           className="w-full text-left px-6 py-5 bg-amber-400 text-black font-black rounded-xl flex items-center justify-between border-2 border-amber-500 shadow-[0_6px_0_0_#d97706] hover:bg-amber-300 hover:shadow-[0_4px_0_0_#d97706] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#d97706] active:translate-y-[6px] transition-all duration-150 uppercase tracking-tight"
         >
-          Saisie des interventions <span className="text-2xl">→</span>
+          Saisie des bons d'interventions <span className="text-2xl">→</span>
         </button>
         <button 
           onClick={() => setView('consultation')} 
@@ -568,7 +568,7 @@ export default function App() {
         <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
           <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm transition-colors">← MENU</button>
           <div>
-            <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">Saisie d'intervention</h1>
+            <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">Saisie d'un bon d'intervention</h1>
             <p className="text-[10px] md:text-xs text-amber-500 font-black uppercase tracking-widest">Maintenance Control</p>
           </div>
         </div>
