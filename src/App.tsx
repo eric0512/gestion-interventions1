@@ -329,11 +329,11 @@ export default function App() {
         throw new Error("La clé API Gemini n'est pas configurée.");
       }
       
-      // Liste des modèles à essayer par ordre de préférence (les plus stables)
+      // Liste des modèles spécifiques à votre clé (détectés par diagnostic)
       const modelsToTry = [
-        "gemini-1.5-flash",
-        "gemini-1.5-flash", // On réessaie le flash une deuxième fois après une pause
-        "gemini-1.5-pro"
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-2.5-pro"
       ];
 
       let lastError: any = null;
