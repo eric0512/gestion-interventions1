@@ -126,34 +126,52 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('offline');
   const sigCanvas = useRef<any>(null);
 
-  // Chargement initial depuis Supabase
+  const fetchInterventions = async () => {
+    if (!import.meta.env.VITE_SUPABASE_URL) {
+      setSyncStatus('offline');
+      return;
+    }
+
+    setSyncStatus('syncing');
+    try {
+      const { data, error } = await supabase
+        .from('interventions')
+        .select('*')
+        .order('dateSaisie', { ascending: false });
+
+      if (error) throw error;
+      
+      if (data) {
+        setInterventions(data);
+      }
+      setSyncStatus('synced');
+    } catch (err) {
+      console.error("Erreur de synchronisation:", err);
+      setSyncStatus('error');
+    }
+  };
+
+  // Chargement initial et Temps Réel
   useEffect(() => {
-    const fetchInterventions = async () => {
-      if (!import.meta.env.VITE_SUPABASE_URL) {
-        setSyncStatus('offline');
-        return;
-      }
-
-      setSyncStatus('syncing');
-      try {
-        const { data, error } = await supabase
-          .from('interventions')
-          .select('*')
-          .order('dateSaisie', { ascending: false });
-
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          setInterventions(data);
-        }
-        setSyncStatus('synced');
-      } catch (err) {
-        console.error("Erreur de synchronisation initiale:", err);
-        setSyncStatus('error');
-      }
-    };
-
     fetchInterventions();
+
+    if (import.meta.env.VITE_SUPABASE_URL) {
+      // S'abonner aux changements en temps réel
+      const channel = supabase
+        .channel('db-changes')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'interventions' 
+        }, () => {
+          fetchInterventions();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, []);
 
   useEffect(() => {
@@ -444,9 +462,17 @@ export default function App() {
       <div className="flex justify-between items-center mb-8 border-b border-slate-100 pb-4">
         <h1 className="text-3xl font-bold text-blue-900">Gestion des Interventions</h1>
         <div className="flex items-center gap-2">
-          {syncStatus === 'synced' && <Cloud size={20} className="text-emerald-500" title="Synchronisé" />}
+          {syncStatus === 'synced' && (
+            <button onClick={fetchInterventions} title="Synchronisé - Cliquez pour rafraîchir">
+              <Cloud size={20} className="text-emerald-500 hover:text-emerald-600 transition-colors" />
+            </button>
+          )}
           {syncStatus === 'syncing' && <RefreshCw size={20} className="text-blue-500 animate-spin" title="Synchronisation..." />}
-          {syncStatus === 'error' && <CloudOff size={20} className="text-red-500" title="Erreur de synchronisation" />}
+          {syncStatus === 'error' && (
+            <button onClick={fetchInterventions} title="Erreur - Cliquez pour réessayer">
+              <CloudOff size={20} className="text-red-500 hover:text-red-600 transition-colors" />
+            </button>
+          )}
           {syncStatus === 'offline' && <CloudOff size={20} className="text-slate-400" title="Mode hors-ligne" />}
         </div>
       </div>
