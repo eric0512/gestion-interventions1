@@ -314,15 +314,23 @@ export default function App() {
       // Liste des modèles à essayer par ordre de préférence (les plus stables)
       const modelsToTry = [
         "gemini-1.5-flash",
-        "gemini-2.0-flash-exp"
+        "gemini-1.5-flash", // On réessaie le flash une deuxième fois après une pause
+        "gemini-1.5-pro"
       ];
 
       let lastError: any = null;
       let result: any = null;
 
-      for (const modelName of modelsToTry) {
+      for (let i = 0; i < modelsToTry.length; i++) {
+        const modelName = modelsToTry[i];
         try {
-          console.log(`[IA] Tentative avec : ${modelName}...`);
+          if (i > 0) {
+            console.log("[IA] Pause de 2s avant nouvel essai...");
+            setExtractStep("Surcharge... Nouvelle tentative...");
+            await new Promise(r => setTimeout(r, 2000));
+          }
+
+          console.log(`[IA] Tentative ${i + 1} avec : ${modelName}...`);
           setExtractStep(`Analyse (${modelName})...`);
 
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
