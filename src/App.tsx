@@ -307,41 +307,66 @@ export default function App() {
 
       setExtractStep("Envoi à l'IA...");
       
-      if (!ai) {
-        throw new Error("L'IA n'est pas configurée. Veuillez ajouter votre VITE_GEMINI_API_KEY dans les paramètres Vercel.");
+      if (!API_KEY) {
+        throw new Error("La clé API Gemini n'est pas configurée.");
       }
       
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
-      
-      const payload = {
-        contents: [{
-          parts: [
-            { inlineData: { mimeType: mimeType, data: base64 } },
-            { text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. Output the response strictly as a JSON object with these keys: dateSaisie, numeroBon, demandeur, refBatiment, dateDemande, dateDevis, lieu, etage, piece, demande, description, atelier, dateExecution, travauxRealises, tempsPasse, nomIntervenant." }
-          ]
-        }],
-        generationConfig: { responseMimeType: "application/json" }
-      };
+      // Liste des modèles à essayer par ordre de préférence
+      const modelsToTry = [
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b"
+      ];
 
-      const fetchPromise = fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      let lastError: any = null;
+      let result: any = null;
 
-      const timeoutPromise = new Promise<any>((_, reject) => 
-        setTimeout(() => reject(new Error("Le serveur IA met trop de temps à répondre (Time-Out).")), 30000)
-      );
+      for (const modelName of modelsToTry) {
+        try {
+          console.log(`[IA] Tentative avec : ${modelName}...`);
+          setExtractStep(`Analyse (${modelName})...`);
 
-      const responseRaw: any = await Promise.race([fetchPromise, timeoutPromise]);
-      
-      if (!responseRaw.ok) {
-        const errorText = await responseRaw.text();
-        throw new Error(errorText);
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
+          
+          const payload = {
+            contents: [{
+              parts: [
+                { inlineData: { mimeType: mimeType, data: base64 } },
+                { text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. Output the response strictly as a JSON object with these keys: dateSaisie, numeroBon, demandeur, refBatiment, dateDemande, dateDevis, lieu, etage, piece, demande, description, atelier, dateExecution, travauxRealises, tempsPasse, nomIntervenant." }
+              ]
+            }],
+            generationConfig: { responseMimeType: "application/json" }
+          };
+
+          const fetchPromise = fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const timeoutPromise = new Promise<any>((_, reject) => 
+            setTimeout(() => reject(new Error("Timeout")), 30000)
+          );
+
+          const responseRaw: any = await Promise.race([fetchPromise, timeoutPromise]);
+          
+          if (!responseRaw.ok) {
+            const errorText = await responseRaw.text();
+            throw new Error(errorText);
+          }
+
+          result = await responseRaw.json();
+          console.log(`[IA] Succès avec ${modelName} !`);
+          break; // Sortie de la boucle si succès
+        } catch (err: any) {
+          console.warn(`[IA] Échec avec ${modelName}:`, err.message);
+          lastError = err;
+          // Si c'est le dernier modèle, on laisse l'erreur remonter au bloc catch principal
+        }
       }
 
-      const result = await responseRaw.json();
-      console.log("[Diagnostic] Réponse reçue de l'IA !");
+      if (!result) throw lastError;
+      console.log("[Diagnostic] Réponse finale reçue de l'IA !");
 
       const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (responseText) {
