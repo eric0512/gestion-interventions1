@@ -232,41 +232,23 @@ export default function App() {
       
       const fetchPromise = ai.models.generateContent({
         model: "gemini-1.5-flash",
-        contents: {
-          parts: [
-            {
-              inlineData: { mimeType: mimeType, data: base64 },
-            },
-            {
-              text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. If date is not in that format, translate it. dateSaisie is the date next to 'Colmar le'. numeroBon is the bon number. Other fields: demandeur, refBatiment, lieu, etage, piece, demande, description, atelier. Output the response strictly as a JSON object matching this structure. Always provide an empty string if a field is not found.",
-            },
-          ],
-        },
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              dateSaisie: { type: Type.STRING },
-              numeroBon: { type: Type.STRING },
-              demandeur: { type: Type.STRING },
-              refBatiment: { type: Type.STRING },
-              dateDemande: { type: Type.STRING },
-              dateDevis: { type: Type.STRING },
-              lieu: { type: Type.STRING },
-              etage: { type: Type.STRING },
-              piece: { type: Type.STRING },
-              demande: { type: Type.STRING },
-              description: { type: Type.STRING },
-              atelier: { type: Type.STRING },
-              dateExecution: { type: Type.STRING },
-              travauxRealises: { type: Type.STRING },
-              tempsPasse: { type: Type.STRING },
-              nomIntervenant: { type: Type.STRING },
-            },
+        contents: [
+          {
+            parts: [
+              {
+                inlineData: { mimeType: mimeType, data: base64 },
+              },
+              {
+                text: "Extract the following fields from this intervention form. IMPORTANT: For dates (dateSaisie, dateExecution, dateDemande, dateDevis), extract the value and convert it strictly into YYYY-MM-DD format. Output the response strictly as a JSON object with these keys: dateSaisie, numeroBon, demandeur, refBatiment, dateDemande, dateDevis, lieu, etage, piece, demande, description, atelier, dateExecution, travauxRealises, tempsPasse, nomIntervenant.",
+              },
+            ],
           },
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
         },
       });
+
 
 
 
