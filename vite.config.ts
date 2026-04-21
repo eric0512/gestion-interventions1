@@ -8,7 +8,13 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [react(), tailwindcss()],
     define: {
-      '__APP_GEMINI_KEY__': JSON.stringify(process.env.VITE_GEMINI_API_KEY || "")
+      '__APP_GEMINI_KEY__': JSON.stringify((() => {
+        const key = process.env.VITE_GEMINI_API_KEY || "";
+        if (!key) {
+           console.error("CRITICAL ERROR: VITE_GEMINI_API_KEY is missing during build!");
+        }
+        return key;
+      })())
     },
     resolve: {
       alias: {
