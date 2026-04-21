@@ -19,17 +19,8 @@ import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { Trash2 } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 
-// Initialisation sécurisée de l'IA
-// On utilise une approche résiliente pour éviter les crashs au chargement
-const getApiKey = () => {
-  try {
-    return process.env.GEMINI_API_KEY || "";
-  } catch (e) {
-    return "";
-  }
-};
-
-const API_KEY = getApiKey();
+// Détection de la clé API (Norme Vite + Vercel)
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
 let ai: any = null;
 
 if (API_KEY) {
@@ -228,7 +219,7 @@ export default function App() {
       setExtractStep("Envoi à l'IA...");
       
       if (!ai) {
-        throw new Error("L'IA n'est pas configurée. Veuillez ajouter votre GEMINI_API_KEY dans les paramètres Vercel.");
+        throw new Error("L'IA n'est pas configurée. Veuillez ajouter votre VITE_GEMINI_API_KEY dans les paramètres Vercel.");
       }
       
       const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
