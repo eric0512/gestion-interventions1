@@ -34,6 +34,8 @@ if (API_KEY) {
       apiKey: API_KEY,
       apiVersion: 'v1'
     });
+    // On liste les modèles pour trouver le bon nom
+    ai.models.list().then((m: any) => console.log("Modèles disponibles :", m)).catch((err: any) => console.error("Erreur liste modèles :", err));
   } catch (e) {
     console.error("Erreur d'initialisation de GoogleGenAI:", e);
   }
