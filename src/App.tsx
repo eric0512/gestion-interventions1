@@ -714,7 +714,7 @@ export default function App() {
       setCurrentId(finalData.id);
     } else {
       setFormData({
-        dateSaisie: "",
+        dateSaisie: getTodayFormatted(),
         numeroBon: "",
         demandeur: "",
         refBatiment: "",
@@ -899,7 +899,6 @@ export default function App() {
                 <input 
                   name="dateDemande" 
                   value={formData.dateDemande} 
-                  min={formData.dateSaisie} 
                   onChange={handleChange} 
                   onFocus={() => {
                     if (!formData.dateDemande && formData.dateSaisie) {
@@ -1268,11 +1267,11 @@ export default function App() {
                   onClick={() => handleOpenSaisie(i)} 
                   className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
-                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSaisie) ? 'text-red-600' : ''}`}>
+                  <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
-                    {isDateOlderThan30Days(i.dateDevis, i.dateSaisie) && (
+                    {isDateOlderThan30Days(i.dateDemande) && (
                       <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard (+{getDaysElapsed(i.dateDevis, i.dateSaisie)}j)
+                        En retard (+{getDaysElapsed(i.dateDemande)}j)
                       </span>
                     )}
                   </div>
@@ -1399,11 +1398,11 @@ export default function App() {
                   onClick={() => handleOpenSaisie(i)} 
                   className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
-                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSaisie) ? 'text-red-600' : ''}`}>
+                  <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
-                    {isDateOlderThan30Days(i.dateDevis, i.dateSaisie) && (
+                    {isDateOlderThan30Days(i.dateDemande) && (
                       <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard (+{getDaysElapsed(i.dateDevis, i.dateSaisie)}j)
+                        En retard (+{getDaysElapsed(i.dateDemande)}j)
                       </span>
                     )}
                   </div>
@@ -1559,8 +1558,8 @@ export default function App() {
                 {filtered.map((i: any) => {
                   if (!i) return null;
                   const totalMinutes = (i.passages || []).reduce((acc: number, p: any) => acc + parseDuration(p.tempsPasse), 0);
-                  const delay = getDaysElapsed(i.dateDevis, i.dateSaisie);
-                  const isLate = isDateOlderThan30Days(i.dateDevis, i.dateSaisie);
+                  const delay = getDaysElapsed(i.dateDemande);
+                  const isLate = isDateOlderThan30Days(i.dateDemande);
 
                   return (
                     <tr key={i.id} className={`hover:bg-slate-50 transition-colors ${isLate ? 'bg-red-50' : ''}`}>
