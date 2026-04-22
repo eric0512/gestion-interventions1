@@ -15,7 +15,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
-import { Trash2, Cloud, CloudOff, RefreshCw } from 'lucide-react';
+import { Trash2, Cloud, CloudOff, RefreshCw, Camera, FileText, Loader2 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import SignatureCanvas from 'react-signature-canvas';
 import { supabase } from './supabaseClient';
 
@@ -129,7 +130,9 @@ export default function App() {
   const [signingId, setSigningId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('offline');
   const [diagResult, setDiagResult] = useState<string | null>(null);
+  const [isUploadingDevis, setIsUploadingDevis] = useState(false);
   const sigCanvas = useRef<any>(null);
+  const devisInputRef = useRef<HTMLInputElement>(null);
 
   const fetchInterventions = async () => {
     if (!import.meta.env.VITE_SUPABASE_URL) {
@@ -470,6 +473,73 @@ export default function App() {
     }
   };
 
+  const handleDevisPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setIsUploadingDevis(true);
+    try {
+      const files = Array.from(e.target.files);
+      const pdf = new jsPDF();
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Compression
+        const options = {
+          maxSizeMB: 0.7,
+          maxWidthOrHeight: 1280,
+          useWebWorker: true,
+          fileType: "image/jpeg"
+        };
+        const compressedFile = await imageCompression(file, options);
+        
+        // Conversion en DataURL pour jsPDF
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(compressedFile);
+        });
+        
+        if (i > 0) pdf.addPage();
+        
+        const imgProps = pdf.getImageProperties(dataUrl);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(dataUrl, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      }
+      
+      const pdfBlob = pdf.output('blob');
+      const fileName = `devis_${currentId || 'new'}_${Date.now()}.pdf`;
+      const filePath = `${currentId || 'temp'}/${fileName}`;
+      
+      // Upload vers Supabase (Bucket DEVIS)
+      const { data, error } = await supabase.storage
+        .from('DEVIS')
+        .upload(filePath, pdfBlob);
+        
+      if (error) throw error;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('DEVIS')
+        .getPublicUrl(filePath);
+        
+      const updatedData = { ...formData, urlDevis: publicUrl };
+      setFormData(updatedData);
+      
+      if (currentId) {
+        syncIntervention({ ...updatedData, id: currentId });
+      }
+      
+      alert("Devis PDF généré et sauvegardé avec succès !");
+    } catch (err: any) {
+      console.error("Erreur upload devis:", err);
+      alert("Erreur lors de la création du PDF : " + (err.message || "Erreur inconnue"));
+    } finally {
+      setIsUploadingDevis(false);
+    }
+  };
+
   const openForm = (intervention: any | null = null) => {
     if (intervention) {
       let data = { ...intervention };
@@ -670,7 +740,38 @@ export default function App() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Date de devis</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Date de devis</label>
+                  <div className="flex gap-2">
+                    {formData.urlDevis && (
+                      <a 
+                        href={formData.urlDevis} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 uppercase flex items-center gap-1"
+                      >
+                        <FileText size={12} /> Voir Devis
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => devisInputRef.current?.click()}
+                      disabled={isUploadingDevis || isArchived}
+                      className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {isUploadingDevis ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                      {isUploadingDevis ? 'Traitement...' : 'Photo Devis'}
+                    </button>
+                    <input 
+                      type="file" 
+                      ref={devisInputRef}
+                      onChange={handleDevisPhotos}
+                      accept="image/*" 
+                      multiple 
+                      className="hidden" 
+                    />
+                  </div>
+                </div>
                 <input 
                   name="dateDevis" 
                   value={formData.dateDevis} 
