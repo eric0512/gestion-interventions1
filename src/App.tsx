@@ -805,6 +805,15 @@ export default function App() {
                   </div>
                   
                   <div className="flex-shrink-0">
+                    <input 
+                      type="file" 
+                      ref={devisInputRef}
+                      onChange={handleDevisPhotos}
+                      accept="image/*" 
+                      capture="environment"
+                      multiple 
+                      className="hidden" 
+                    />
                     {formData.urlDevis ? (
                       <div className="flex items-center gap-2">
                         <a 
@@ -869,15 +878,6 @@ export default function App() {
                           {isUploadingDevis ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
                           {isUploadingDevis ? 'Traitement...' : 'Photo Devis'}
                         </button>
-                        <input 
-                          type="file" 
-                          ref={devisInputRef}
-                          onChange={handleDevisPhotos}
-                          accept="image/*" 
-                          capture="environment"
-                          multiple 
-                          className="hidden" 
-                        />
                       </div>
                     )}
                   </div>
