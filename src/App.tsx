@@ -671,7 +671,7 @@ export default function App() {
     const isArchived = Boolean(formData.signature);
 
     return (
-    <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg overflow-hidden">
+    <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg">
       <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b-4 border-amber-500 shadow-md">
         <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
           <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm transition-colors">← MENU</button>
@@ -1092,7 +1092,7 @@ export default function App() {
     );
     
     return (
-      <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg overflow-hidden relative">
+      <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
         <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b-4 border-amber-500 shadow-md">
           <div className="flex justify-between items-center">
             <div>
@@ -1189,7 +1189,7 @@ export default function App() {
     });
 
     return (
-      <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg overflow-hidden relative">
+      <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
         <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b-4 border-amber-500 shadow-md">
           <div className="flex justify-between items-center">
             <div>
