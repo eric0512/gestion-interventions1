@@ -505,7 +505,7 @@ export default function App() {
     
     setIsUploadingDevis(true);
     try {
-      const files = Array.from(e.target.files);
+      const files = Array.from(e.target.files) as File[];
       const newPhotos: string[] = [];
       
       for (let i = 0; i < files.length; i++) {
