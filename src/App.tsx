@@ -53,19 +53,19 @@ const getTodayFormatted = () => {
   return `${year}-${month}-${day}`;
 };
 
-const getDaysElapsed = (dateStr: string) => {
+const getDaysElapsed = (dateStr: string, endDateStr?: string) => {
   if (!dateStr) return 0;
   const date = new Date(dateStr);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const end = endDateStr ? new Date(endDateStr) : new Date();
+  end.setHours(0, 0, 0, 0);
   date.setHours(0, 0, 0, 0);
-  const diffTime = today.getTime() - date.getTime();
+  const diffTime = end.getTime() - date.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
 };
 
-const isDateOlderThan30Days = (dateStr: string) => {
-  return getDaysElapsed(dateStr) > 30;
+const isDateOlderThan30Days = (dateStr: string, endDateStr?: string) => {
+  return getDaysElapsed(dateStr, endDateStr) > 30;
 };
 
 export default function App() {
@@ -919,7 +919,8 @@ export default function App() {
   const saveSignature = (id: string) => {
     if (sigCanvas.current) {
       const signature = sigCanvas.current.toDataURL();
-      const updatedInterventions = interventions.map((i: any) => i.id === id ? { ...i, signature } : i);
+      const dateSignature = getTodayFormatted();
+      const updatedInterventions = interventions.map((i: any) => i.id === id ? { ...i, signature, dateSignature } : i);
       setInterventions(updatedInterventions);
       
       const updatedItem = updatedInterventions.find((i: any) => i.id === id);
@@ -929,7 +930,7 @@ export default function App() {
       
       // Update formData if it is the currently edited intervention
       if (currentId === id) {
-        setFormData(prev => ({ ...prev, signature }));
+        setFormData(prev => ({ ...prev, signature, dateSignature }));
       }
       
       setSigningId(null);
@@ -969,11 +970,11 @@ export default function App() {
                   onClick={() => openForm(i)} 
                   className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
-                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis) ? 'text-red-600' : ''}`}>
+                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSignature) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
-                    {isDateOlderThan30Days(i.dateDevis) && (
+                    {isDateOlderThan30Days(i.dateDevis, i.dateSignature) && (
                       <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard (+{getDaysElapsed(i.dateDevis)}j)
+                        En retard (+{getDaysElapsed(i.dateDevis, i.dateSignature)}j)
                       </span>
                     )}
                   </div>
@@ -1083,11 +1084,11 @@ export default function App() {
                   onClick={() => openForm(i)} 
                   className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
-                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis) ? 'text-red-600' : ''}`}>
+                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSignature) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
-                    {isDateOlderThan30Days(i.dateDevis) && (
+                    {isDateOlderThan30Days(i.dateDevis, i.dateSignature) && (
                       <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard (+{getDaysElapsed(i.dateDevis)}j)
+                        En retard (+{getDaysElapsed(i.dateDevis, i.dateSignature)}j)
                       </span>
                     )}
                   </div>
