@@ -611,23 +611,36 @@ export default function App() {
     }
   };
 
-  const openForm = (intervention: any | null = null) => {
-    if (intervention) {
-      let data = { ...intervention };
-      if (!data.passages || data.passages.length === 0) {
-        data.passages = [{
+  const handleOpenSaisie = (data: any = null) => {
+    setExtractionError(null);
+    // Si c'est une nouvelle saisie (pas de data), on ouvre tous les blocs
+    // Si c'est une modif, on les garde fermés par défaut pour plus de clarté
+    const shouldCollapse = data ? true : false;
+    
+    setCollapsedSections({
+      admin: shouldCollapse,
+      demandeur: shouldCollapse,
+      localisation: shouldCollapse,
+      details: shouldCollapse
+    });
+
+    if (data) {
+      // S'assurer que les passages existent pour l'affichage
+      let finalData = { ...data };
+      if (!finalData.passages || finalData.passages.length === 0) {
+        finalData.passages = [{
           id: Date.now().toString(),
-          dateExecution: data.dateExecution || "",
-          travauxRealises: data.travauxRealises || "",
-          tempsPasse: data.tempsPasse || "",
-          nomIntervenant: data.nomIntervenant || "Christophe Meyer",
+          dateExecution: finalData.dateExecution || "",
+          travauxRealises: finalData.travauxRealises || "",
+          tempsPasse: finalData.tempsPasse || "",
+          nomIntervenant: finalData.nomIntervenant || "Christophe Meyer",
           nouveauPassageRequis: false,
           raisonNouveauPassage: "Demande de devis",
           autreRaison: ""
         }];
       }
-      setFormData(data);
-      setCurrentId(data.id);
+      setFormData(finalData);
+      setCurrentId(finalData.id);
     } else {
       setFormData({
         dateSaisie: "",
@@ -682,7 +695,7 @@ export default function App() {
       <div className="p-8">
       <div className="space-y-6 pb-2">
         <button 
-          onClick={() => openForm()} 
+          onClick={() => handleOpenSaisie()} 
           className="w-full text-left px-6 py-5 bg-amber-400 text-black font-black rounded-xl flex items-center justify-between border-2 border-amber-500 shadow-[0_6px_0_0_#d97706] hover:bg-amber-300 hover:shadow-[0_4px_0_0_#d97706] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#d97706] active:translate-y-[6px] transition-all duration-150 uppercase tracking-tight"
         >
           Saisie des bons d'interventions <span className="text-2xl">→</span>
@@ -728,7 +741,7 @@ export default function App() {
           <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm transition-colors">← MENU</button>
           <div>
             <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">
-              Saisie de l'intervention
+              Saisie des bons
             </h1>
             <p className="text-[10px] md:text-xs text-amber-500 font-black uppercase tracking-widest">Maintenance Control</p>
           </div>
@@ -1240,7 +1253,7 @@ export default function App() {
             <div key={i.id} className={`w-full p-4 rounded border ${i.signature ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
               <div className='flex justify-between items-center mb-2'>
                 <button 
-                  onClick={() => openForm(i)} 
+                  onClick={() => handleOpenSaisie(i)} 
                   className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
                   <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSignature) ? 'text-red-600' : ''}`}>
@@ -1365,7 +1378,7 @@ export default function App() {
             <div key={i.id} className={`w-full p-4 rounded border ${i.signature ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
               <div className='flex justify-between items-center mb-2'>
                 <button 
-                  onClick={() => openForm(i)} 
+                  onClick={() => handleOpenSaisie(i)} 
                   className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
                   <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSignature) ? 'text-red-600' : ''}`}>
@@ -1530,7 +1543,7 @@ export default function App() {
                     <tr key={i.id} className={`hover:bg-slate-50 transition-colors ${isLate ? 'bg-red-50' : ''}`}>
                       <td className="px-4 py-4">
                         <button 
-                          onClick={() => openForm(i)}
+                          onClick={() => handleOpenSaisie(i)}
                           className="text-amber-600 hover:text-amber-700 font-black underline decoration-2 underline-offset-4"
                         >
                           {i.numeroBon || "VOIR"}
