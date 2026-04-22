@@ -1461,7 +1461,6 @@ export default function App() {
               <thead>
                 <tr className="bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest">
                   <th className="px-4 py-4">N° Bon</th>
-                  <th className="px-4 py-4">Description / Lieu</th>
                   <th className="px-4 py-4">Temps Cumulé</th>
                   <th className="px-4 py-4">État / Retard</th>
                 </tr>
@@ -1482,10 +1481,6 @@ export default function App() {
                           {i.numeroBon || "VOIR"}
                         </button>
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="text-sm font-bold text-slate-900">{i.demande || "SANS TITRE"}</div>
-                        <div className="text-[10px] text-slate-500 uppercase font-bold">{i.lieu}</div>
-                      </td>
                       <td className="px-4 py-4 text-sm font-black text-slate-700">
                         {formatDuration(totalMinutes)}
                       </td>
@@ -1505,7 +1500,7 @@ export default function App() {
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-12 text-center text-slate-400 italic">
+                    <td colSpan={3} className="px-4 py-12 text-center text-slate-400 italic">
                       Aucune donnée trouvée pour cette période.
                     </td>
                   </tr>
