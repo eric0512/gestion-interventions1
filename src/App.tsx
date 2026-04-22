@@ -347,12 +347,13 @@ export default function App() {
     const itemToSync = { ...dataToSave, id: newId };
 
     if (currentId) {
-      setInterventions(interventions.map((i: any) => i.id === currentId ? itemToSync : i));
+      setInterventions((prev: any[]) => prev.map((i: any) => i.id === currentId ? itemToSync : i));
     } else {
-      setInterventions([...interventions, itemToSync]);
+      setInterventions((prev: any[]) => [...prev, itemToSync]);
       setCurrentId(newId);
     }
     
+    console.log("Saving intervention:", itemToSync);
     syncIntervention(itemToSync);
     setView('menu');
   };
