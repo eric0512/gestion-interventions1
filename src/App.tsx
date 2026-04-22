@@ -15,7 +15,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
-import { Trash2, Cloud, CloudOff, RefreshCw, Camera, FileText, Loader2 } from 'lucide-react';
+import { Trash2, Cloud, CloudOff, RefreshCw, Camera, FileText, Loader2, X } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import SignatureCanvas from 'react-signature-canvas';
 import { supabase } from './supabaseClient';
@@ -269,6 +269,7 @@ export default function App() {
 
   const removePassage = (id: string) => {
     if (formData.signature) return;
+    if (!window.confirm("Voulez-vous vraiment supprimer ce passage ?")) return;
     setFormData((prev: any) => ({
       ...prev,
       passages: prev.passages.filter((p: any) => p.id !== id)
@@ -540,6 +541,31 @@ export default function App() {
     }
   };
 
+  const removeDevis = async () => {
+    if (!window.confirm("Voulez-vous vraiment supprimer ce devis ?")) return;
+    
+    const oldUrl = formData.urlDevis;
+    const updatedData = { ...formData, urlDevis: null };
+    setFormData(updatedData);
+    
+    if (currentId) {
+      syncIntervention({ ...updatedData, id: currentId });
+    }
+
+    // Tentative de suppression du fichier physique dans Storage
+    if (oldUrl) {
+      try {
+        const urlParts = oldUrl.split('/devis/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          await supabase.storage.from('devis').remove([filePath]);
+        }
+      } catch (err) {
+        console.error("Erreur lors de la suppression du fichier storage:", err);
+      }
+    }
+  };
+
   const openForm = (intervention: any | null = null) => {
     if (intervention) {
       let data = { ...intervention };
@@ -762,14 +788,26 @@ export default function App() {
                   
                   <div className="flex-shrink-0">
                     {formData.urlDevis ? (
-                      <a 
-                        href={formData.urlDevis} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black px-3 py-2 rounded uppercase flex items-center gap-2 transition-colors shadow-sm"
-                      >
-                        <FileText size={14} /> Voir Devis
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <a 
+                          href={formData.urlDevis} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black px-3 py-2 rounded uppercase flex items-center gap-2 transition-colors shadow-sm"
+                        >
+                          <FileText size={14} /> Voir Devis
+                        </a>
+                        {!isArchived && (
+                          <button
+                            type="button"
+                            onClick={removeDevis}
+                            className="p-2 text-red-500 hover:text-red-700 transition-colors"
+                            title="Supprimer le devis"
+                          >
+                            <X size={18} />
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <div className="flex items-center gap-2">
                         <button
