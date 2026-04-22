@@ -235,10 +235,12 @@ export default function App() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    if (formData.signature) return;
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handlePassageChange = (id: string, field: string, value: any) => {
+    if (formData.signature) return;
     setFormData((prev: any) => ({
       ...prev,
       passages: prev.passages.map((p: any) => p.id === id ? { ...p, [field]: value } : p)
@@ -246,6 +248,7 @@ export default function App() {
   };
 
   const addPassage = () => {
+    if (formData.signature) return;
     setFormData((prev: any) => ({
       ...prev,
       passages: [...(prev.passages || []), {
@@ -262,6 +265,7 @@ export default function App() {
   };
 
   const removePassage = (id: string) => {
+    if (formData.signature) return;
     setFormData((prev: any) => ({
       ...prev,
       passages: prev.passages.filter((p: any) => p.id !== id)
@@ -269,6 +273,7 @@ export default function App() {
   };
 
   const handleSave = () => {
+    if (formData.signature) return;
     let dataToSave = { ...formData };
     if (dataToSave.passages && dataToSave.passages.length > 0) {
       dataToSave.dateExecution = dataToSave.passages[0].dateExecution;
@@ -562,13 +567,18 @@ export default function App() {
     </div>
   );
 
-  const renderSaisie = () => (
+  const renderSaisie = () => {
+    const isArchived = Boolean(formData.signature);
+
+    return (
     <div className="w-full max-w-4xl bg-white shadow-2xl border border-slate-300 rounded-lg overflow-hidden">
       <header className="bg-slate-900 text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b-4 border-amber-500">
         <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
           <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm transition-colors">← MENU</button>
           <div>
-            <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">Saisie d'un bon d'intervention</h1>
+            <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">
+              {isArchived ? "Consultation d'un bon d'intervention" : "Saisie d'un bon d'intervention"}
+            </h1>
             <p className="text-[10px] md:text-xs text-amber-500 font-black uppercase tracking-widest">Maintenance Control</p>
           </div>
         </div>
@@ -601,7 +611,9 @@ export default function App() {
                </div>
              </>
            )}
-           <button onClick={handleSave} className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-400 active:scale-95 text-black px-6 py-2 rounded font-black uppercase tracking-tight shadow-xl shadow-amber-500/20 transition-all border-b-4 border-amber-700 hover:border-amber-600 active:border-b-0">Sauvegarder</button>
+           {!isArchived && (
+             <button onClick={handleSave} className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-400 active:scale-95 text-black px-6 py-2 rounded font-black uppercase tracking-tight shadow-xl shadow-amber-500/20 transition-all border-b-4 border-amber-700 hover:border-amber-600 active:border-b-0">Sauvegarder</button>
+           )}
         </div>
       </header>
       
@@ -619,21 +631,21 @@ export default function App() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase">Colmar le</label>
-                <input name="dateSaisie" value={formData.dateSaisie} onChange={handleChange} type="date" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
+                <input name="dateSaisie" value={formData.dateSaisie} onChange={handleChange} disabled={isArchived} type="date" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 disabled:opacity-75" />
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase">N° de bon</label>
-                <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 font-bold" />
+                <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 font-bold disabled:opacity-75" />
               </div>
             </div>
             <h3 className="text-xs font-black text-slate-900 border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Informations Demandeur</h3>
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase">Demandeur</label>
-              <input name="demandeur" value={formData.demandeur} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
+              <input name="demandeur" value={formData.demandeur} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 disabled:opacity-75" />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase">Référence Bâtiment</label>
-              <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
+              <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 disabled:opacity-75" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -649,7 +661,8 @@ export default function App() {
                     }
                   }}
                   type="date" 
-                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" 
+                  disabled={isArchived}
+                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 disabled:opacity-75" 
                 />
               </div>
               <div>
@@ -666,7 +679,8 @@ export default function App() {
                     }
                   }}
                   type="date" 
-                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" 
+                  disabled={isArchived}
+                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 disabled:opacity-75" 
                 />
               </div>
             </div>
@@ -675,16 +689,16 @@ export default function App() {
             <h3 className="text-xs font-black text-slate-900 border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Localisation</h3>
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase">Lieu</label>
-              <input name="lieu" value={formData.lieu} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
+              <input name="lieu" value={formData.lieu} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 disabled:opacity-75" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase">Étage</label>
-                <input name="etage" value={formData.etage} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
+                <input name="etage" value={formData.etage} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 disabled:opacity-75" />
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase">Pièce</label>
-                <input name="piece" value={formData.piece} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
+                <input name="piece" value={formData.piece} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 disabled:opacity-75" />
               </div>
             </div>
           </div>
@@ -697,11 +711,11 @@ export default function App() {
           <h3 className="text-xs font-black text-slate-900 border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Détails de l'Intervention</h3>
           <div className="mb-4">
             <label className="block text-[10px] font-bold text-slate-500 uppercase">Demande</label>
-            <input name="demande" value={formData.demande} onChange={handleChange} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 font-bold" />
+            <input name="demande" value={formData.demande} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 font-bold disabled:opacity-75" />
           </div>
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase">Description de l'intervention</label>
-            <textarea name="description" value={formData.description} onChange={handleChange} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 h-24 resize-none" />
+            <textarea name="description" value={formData.description} onChange={handleChange} disabled={isArchived} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 h-24 resize-none disabled:opacity-75" />
           </div>
         </section>
 
@@ -709,7 +723,7 @@ export default function App() {
           <section className="border-t border-slate-200 pt-8 mt-8">
             <div className="flex justify-between items-center border-b-2 border-amber-500 pb-1 mb-3">
               <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Retour de fiche / Passages</h3>
-              {formData.passages && formData.passages.length > 0 && (
+              {formData.passages && formData.passages.length > 0 && !isArchived && (
                  <button type="button" onClick={addPassage} className="text-xs font-black text-amber-600 hover:text-amber-700 uppercase tracking-tighter">
                    + Ajouter un passage
                  </button>
@@ -720,7 +734,7 @@ export default function App() {
               {formData.passages?.map((passage: any, index: number) => (
                 <div key={passage.id} className="bg-slate-50/50 p-4 rounded border border-slate-200 relative">
                   <div className="absolute top-4 right-4">
-                     {formData.passages.length > 1 && (
+                     {formData.passages.length > 1 && !isArchived && (
                        <button type="button" onClick={() => removePassage(passage.id)} className="text-red-500 hover:text-red-700" aria-label="Supprimer ce passage">
                          <Trash2 size={16} />
                        </button>
@@ -734,10 +748,11 @@ export default function App() {
                       <input 
                         type="date" 
                         value={passage.dateExecution} 
+                        disabled={isArchived}
                         min={formData.dateSaisie} 
                         onChange={(e) => handlePassageChange(passage.id, 'dateExecution', e.target.value)} 
                         onFocus={() => { if (!passage.dateExecution && formData.dateSaisie) handlePassageChange(passage.id, 'dateExecution', formData.dateSaisie) }} 
-                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white" 
+                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white disabled:opacity-75" 
                       />
                     </div>
                     <div>
@@ -745,10 +760,11 @@ export default function App() {
                       <input 
                         list="temps-passe-list" 
                         value={passage.tempsPasse} 
+                        disabled={isArchived}
                         onChange={(e) => handlePassageChange(passage.id, 'tempsPasse', e.target.value)} 
                         type="text" 
                         placeholder="ex: 02h30" 
-                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold" 
+                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold disabled:opacity-75" 
                       />
                     </div>
                   </div>
@@ -757,8 +773,9 @@ export default function App() {
                     <label className="block text-[10px] font-bold text-slate-500 uppercase">Nom de l'intervenant</label>
                     <select 
                       value={passage.nomIntervenant} 
+                      disabled={isArchived}
                       onChange={(e) => handlePassageChange(passage.id, 'nomIntervenant', e.target.value)} 
-                      className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold"
+                      className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold disabled:opacity-75"
                     >
                       <option value="Christophe Meyer">Christophe Meyer</option>
                       <option value="Autre">Autre...</option>
@@ -769,8 +786,9 @@ export default function App() {
                     <label className="block text-[10px] font-bold text-slate-500 uppercase">Travaux réalisés</label>
                     <textarea 
                       value={passage.travauxRealises} 
+                      disabled={isArchived}
                       onChange={(e) => handlePassageChange(passage.id, 'travauxRealises', e.target.value)} 
-                      className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white h-24 resize-none" 
+                      className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white h-24 resize-none disabled:opacity-75" 
                     />
                   </div>
                   
@@ -780,8 +798,9 @@ export default function App() {
                          type="checkbox" 
                          id={`nouveauPassage-${passage.id}`} 
                          checked={passage.nouveauPassageRequis} 
+                         disabled={isArchived}
                          onChange={(e) => handlePassageChange(passage.id, 'nouveauPassageRequis', e.target.checked)} 
-                         className="rounded text-amber-600 focus:ring-amber-500 cursor-pointer" 
+                         className="rounded text-amber-600 focus:ring-amber-500 cursor-pointer disabled:opacity-75" 
                        />
                        <label htmlFor={`nouveauPassage-${passage.id}`} className="text-sm font-bold text-slate-700 cursor-pointer">
                          Obligation d'un autre passage ?
@@ -793,8 +812,9 @@ export default function App() {
                            <label className="block text-[10px] font-bold text-slate-500 uppercase">Raison de ce nouveau passage</label>
                            <select 
                              value={passage.raisonNouveauPassage} 
+                             disabled={isArchived}
                              onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)} 
-                             className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 font-bold"
+                             className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 font-bold disabled:opacity-75"
                            >
                               <option value="Demande de devis">Demande de devis</option>
                               <option value="Pièce(s) manquante(s)">Pièce(s) manquante(s)</option>
@@ -809,8 +829,9 @@ export default function App() {
                              <input 
                                type="text" 
                                value={passage.autreRaison} 
+                               disabled={isArchived}
                                onChange={(e) => handlePassageChange(passage.id, 'autreRaison', e.target.value)} 
-                               className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-amber-500 outline-none bg-slate-50" 
+                               className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-amber-500 outline-none bg-slate-50 disabled:opacity-75" 
                              />
                            </div>
                          )}
@@ -838,16 +859,16 @@ export default function App() {
         <section className="border-t border-slate-200 pt-8">
           <div className="mb-6">
             <label className="block text-[10px] font-bold text-slate-500 uppercase">Atelier</label>
-            <input name="atelier" value={formData.atelier} onChange={handleChange} type="text" className="w-full md:w-1/2 border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50" />
+            <input name="atelier" value={formData.atelier} onChange={handleChange} disabled={isArchived} type="text" className="w-full md:w-1/2 border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50 disabled:opacity-75" />
           </div>
           {currentId && (
             <div 
-              onClick={() => setSigningId(currentId)}
-              className="bg-slate-50 hover:bg-slate-100 cursor-pointer p-4 rounded border border-slate-200 transition-colors flex flex-col items-center justify-center min-h-[120px]"
+              onClick={() => !isArchived && setSigningId(currentId)}
+              className={`bg-slate-50 p-4 rounded border border-slate-200 transition-colors flex flex-col items-center justify-center min-h-[120px] ${isArchived ? 'cursor-default' : 'hover:bg-slate-100 cursor-pointer'}`}
             >
               {formData.signature ? (
                 <div className="flex flex-col items-center">
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2 cursor-pointer">Signature enregistrée (Cliquer pour modifier)</label>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Signature enregistrée</label>
                   <img src={formData.signature} alt="Signature" className="h-24 w-48 border border-slate-300 rounded bg-white" />
                 </div>
               ) : (
