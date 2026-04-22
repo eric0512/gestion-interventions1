@@ -15,7 +15,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
-import { Trash2, Cloud, CloudOff, RefreshCw, Camera, FileText, Loader2, X } from 'lucide-react';
+import { Trash2, Cloud, CloudOff, RefreshCw, Camera, FileText, Loader2, X, ChevronDown, ChevronUp, User, MapPin, Settings } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import SignatureCanvas from 'react-signature-canvas';
 import { supabase } from './supabaseClient';
@@ -132,6 +132,12 @@ export default function App() {
   const [diagResult, setDiagResult] = useState<string | null>(null);
   const [isUploadingDevis, setIsUploadingDevis] = useState(false);
   const [pendingDevisPhotos, setPendingDevisPhotos] = useState<string[]>([]);
+  const [collapsedSections, setCollapsedSections] = useState({
+    admin: true,
+    demandeur: true,
+    localisation: true,
+    details: true
+  });
   const [statsFilter, setStatsFilter] = useState<'year' | 'month' | 'range'>('year');
   const [statsYear, setStatsYear] = useState(() => new Date().getFullYear().toString());
   const [statsMonth, setStatsMonth] = useState(() => (new Date().getMonth() + 1).toString().padStart(2, '0'));
@@ -721,7 +727,7 @@ export default function App() {
           <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm transition-colors">← MENU</button>
           <div>
             <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">
-              {isArchived ? "Consultation d'un bon d'intervention" : "Saisie d'un bon d'intervention"}
+              Saisie de l'intervention
             </h1>
             <p className="text-[10px] md:text-xs text-amber-500 font-black uppercase tracking-widest">Maintenance Control</p>
           </div>
@@ -769,10 +775,20 @@ export default function App() {
       )}
 
       <form className="p-8 space-y-8">
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <h3 className="text-xs font-black text-white border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Données Administratives</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+          <button 
+            type="button"
+            onClick={() => setCollapsedSections(prev => ({ ...prev, admin: !prev.admin }))}
+            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+          >
+            <h3 className="text-xs font-black text-amber-500 uppercase tracking-wider flex items-center gap-2">
+              <FileText size={16} /> Données Administratives
+            </h3>
+            {collapsedSections.admin ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
+          </button>
+          
+          {!collapsedSections.admin && (
+            <div className="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/5 pt-4">
               <div>
                 <label className="block text-[10px] font-bold text-slate-300 uppercase">Colmar le</label>
                 <input name="dateSaisie" value={formData.dateSaisie} onChange={handleChange} disabled={isArchived} type="date" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
@@ -782,16 +798,16 @@ export default function App() {
                 <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
               </div>
             </div>
-            <h3 className="text-xs font-black text-white border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Informations Demandeur</h3>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-300 uppercase">Demandeur</label>
-              <input name="demandeur" value={formData.demandeur} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-300 uppercase">Référence Bâtiment</label>
-              <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          )}
+        </div>
+        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+          <div className="p-4">
+            <h3 className="text-xs font-black text-amber-500 uppercase tracking-wider flex items-center gap-2 mb-4">
+              <User size={16} /> Informations Demandeur
+            </h3>
+            
+            {/* Priority Fields: Always visible */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-[10px] font-bold text-slate-300 uppercase">Date de demande</label>
                 <input 
@@ -848,102 +864,126 @@ export default function App() {
                           rel="noopener noreferrer"
                           className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black px-3 py-2 rounded uppercase flex items-center gap-2 transition-colors shadow-sm"
                         >
-                          <FileText size={14} /> Voir Devis
+                          <FileText size={14} /> Voir
                         </a>
                         {!isArchived && (
                           <button
                             type="button"
                             onClick={removeDevis}
-                            className="p-2 text-red-500 hover:text-red-700 transition-colors"
-                            title="Supprimer le devis"
+                            className="p-1 text-red-500 hover:text-red-700 transition-colors"
                           >
-                            <X size={18} />
+                            <X size={16} />
                           </button>
                         )}
                       </div>
                     ) : pendingDevisPhotos.length > 0 ? (
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => devisInputRef.current?.click()}
-                            disabled={isUploadingDevis || isArchived}
-                            className="bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black px-2 py-2 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
-                          >
-                            <Camera size={14} /> + Page
-                          </button>
-                          <button
-                            type="button"
-                            onClick={generateFinalDevisPDF}
-                            disabled={isUploadingDevis || isArchived}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black px-2 py-2 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
-                          >
-                            {isUploadingDevis ? <Loader2 size={14} className="animate-spin" /> : "OK (" + pendingDevisPhotos.length + ")"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setPendingDevisPhotos([])}
-                            disabled={isUploadingDevis || isArchived}
-                            className="text-white/50 hover:text-white p-1"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                        <p className="text-[9px] text-white/70 font-bold uppercase italic text-center">
-                          {pendingDevisPhotos.length} page(s) en attente
-                        </p>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={generateFinalDevisPDF}
+                        disabled={isUploadingDevis || isArchived}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black px-2 py-1.5 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
+                      >
+                        {isUploadingDevis ? <Loader2 size={12} className="animate-spin" /> : "OK (" + pendingDevisPhotos.length + ")"}
+                      </button>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => devisInputRef.current?.click()}
-                          disabled={isUploadingDevis || isArchived}
-                          className="bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black px-3 py-2 rounded uppercase flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50"
-                        >
-                          {isUploadingDevis ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-                          {isUploadingDevis ? 'Traitement...' : 'Photo Devis'}
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => devisInputRef.current?.click()}
+                        disabled={isUploadingDevis || isArchived}
+                        className="bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black px-2 py-1.5 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
+                      >
+                        <Camera size={14} /> Photo
+                      </button>
                     )}
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Trigger for General Info */}
+            <button 
+              type="button"
+              onClick={() => setCollapsedSections(prev => ({ ...prev, demandeur: !prev.demandeur }))}
+              className="text-[10px] font-black text-amber-500/70 hover:text-amber-500 uppercase flex items-center gap-1 transition-colors"
+            >
+              {collapsedSections.demandeur ? 'Voir plus d\'infos demandeur ↓' : 'Voir moins d\'infos demandeur ↑'}
+            </button>
           </div>
-          <div className="space-y-4">
-            <h3 className="text-xs font-black text-white border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Localisation</h3>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-300 uppercase">Lieu</label>
-              <input name="lieu" value={formData.lieu} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+          {!collapsedSections.demandeur && (
+            <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Étage</label>
-                <input name="etage" value={formData.etage} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
+                <label className="block text-[10px] font-bold text-slate-300 uppercase">Demandeur</label>
+                <input name="demandeur" value={formData.demandeur} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Pièce</label>
-                <input name="piece" value={formData.piece} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
+                <label className="block text-[10px] font-bold text-slate-300 uppercase">Référence Bâtiment</label>
+                <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
               </div>
             </div>
-          </div>
+          )}
+        </div>
+        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+          <button 
+            type="button"
+            onClick={() => setCollapsedSections(prev => ({ ...prev, localisation: !prev.localisation }))}
+            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+          >
+            <h3 className="text-xs font-black text-amber-500 uppercase tracking-wider flex items-center gap-2">
+              <MapPin size={16} /> Localisation
+            </h3>
+            {collapsedSections.localisation ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
+          </button>
+          
+          {!collapsedSections.localisation && (
+            <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-300 uppercase">Lieu</label>
+                <input name="lieu" value={formData.lieu} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Étage</label>
+                  <input name="etage" value={formData.etage} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Pièce</label>
+                  <input name="piece" value={formData.piece} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
           <div className="md:col-span-2">
             {/* Signature moved below */}
           </div>
         </section>
 
-        <section className="border-t border-slate-200 pt-8 mt-8">
-          <h3 className="text-xs font-black text-white border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Détails de l'Intervention</h3>
-          <div className="mb-4">
-            <label className="block text-[10px] font-bold text-slate-300 uppercase">Demande</label>
-            <input name="demande" value={formData.demande} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-slate-300 uppercase">Description de l'intervention</label>
-            <textarea name="description" value={formData.description} onChange={handleChange} disabled={isArchived} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 h-24 resize-none disabled:opacity-75" />
-          </div>
-        </section>
+        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+          <button 
+            type="button"
+            onClick={() => setCollapsedSections(prev => ({ ...prev, details: !prev.details }))}
+            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+          >
+            <h3 className="text-xs font-black text-amber-500 uppercase tracking-wider flex items-center gap-2">
+              <Settings size={16} /> Détails de l'intervention
+            </h3>
+            {collapsedSections.details ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
+          </button>
+          
+          {!collapsedSections.details && (
+            <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
+              <div className="mb-4">
+                <label className="block text-[10px] font-bold text-slate-300 uppercase">Demande</label>
+                <input name="demande" value={formData.demande} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-300 uppercase">Description de l'intervention</label>
+                <textarea name="description" value={formData.description} onChange={handleChange} disabled={isArchived} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 h-24 resize-none disabled:opacity-75" />
+              </div>
+            </div>
+          )}
+        </div>
 
         {currentId && (
           <section className="border-t border-slate-200 pt-8 mt-8">
