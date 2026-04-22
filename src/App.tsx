@@ -81,7 +81,9 @@ export default function App() {
       const saved = localStorage.getItem('interventions');
       if (!saved) return [];
       const parsed = JSON.parse(saved);
-      return Array.isArray(parsed) ? parsed : [];
+      if (!Array.isArray(parsed)) return [];
+      // Nettoyage : on ne garde que les objets valides qui ne sont pas des événements
+      return parsed.filter(i => i && typeof i === 'object' && i.id && !i.nativeEvent);
     } catch (e) {
       console.error("Erreur critique au chargement du localStorage:", e);
       return [];
@@ -275,7 +277,10 @@ export default function App() {
       let shouldTriggerSave = false;
 
       // Logique de clôture automatique
-      if (field === 'raisonNouveauPassage' && value === 'Terminé' && currentPassage?.dateExecution) {
+      const isTerminated = (field === 'raisonNouveauPassage' && value === 'Terminé' && currentPassage?.dateExecution) ||
+                          (field === 'dateExecution' && value && currentPassage?.raisonNouveauPassage === 'Terminé');
+
+      if (isTerminated) {
         if (window.confirm("Voulez vous cloturer cette intervention?")) {
           nextArchived = true;
           shouldTriggerSave = true;
@@ -325,7 +330,9 @@ export default function App() {
 
   const handleSave = (dataOverride: any = null) => {
     try {
-      const dataToValidate = dataOverride || formData;
+      // Éviter de traiter l'objet événement comme des données si appelé via onClick={handleSave}
+      const actualData = (dataOverride && dataOverride.nativeEvent) ? null : dataOverride;
+      const dataToValidate = actualData || formData;
       console.log("Starting handleSave with data:", dataToValidate);
       
       // Validation: Si une date d'intervention est saisie, la raison devient obligatoire
@@ -672,6 +679,11 @@ export default function App() {
 
   const handleOpenSaisie = (data: any = null) => {
     setExtractionError(null);
+    setIsExtracting(false);
+    
+    // Ignorer si c'est un objet événement
+    if (data && data.nativeEvent) data = null;
+
     // Si c'est une nouvelle saisie (pas de data), on ouvre tous les blocs
     // Si c'est une modif, on les garde fermés par défaut pour plus de clarté
     const shouldCollapse = data ? true : false;
@@ -836,7 +848,7 @@ export default function App() {
              </>
            )}
            {!isArchived && (
-             <button onClick={handleSave} className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-400 active:scale-95 text-black px-6 py-2 rounded font-black uppercase tracking-tight shadow-xl shadow-amber-500/20 transition-all border-b-4 border-amber-700 hover:border-amber-600 active:border-b-0">Sauvegarder</button>
+             <button onClick={() => handleSave()} className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-400 active:scale-95 text-black px-6 py-2 rounded font-black uppercase tracking-tight shadow-xl shadow-amber-500/20 transition-all border-b-4 border-amber-700 hover:border-amber-600 active:border-b-0">Sauvegarder</button>
            )}
         </div>
       </header>
