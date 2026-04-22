@@ -1149,19 +1149,6 @@ export default function App() {
         <ChevronUp size={24} />
       </button>
 
-      {signingId && (
-        <div className="fixed inset-0 bg-slate-900/50 flex flex-col items-center justify-center p-6 z-[100]">
-          <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
-            <h2 className="text-lg font-bold mb-4">Signature</h2>
-            <SignatureCanvas ref={sigCanvas} penColor='black' canvasProps={{width: 300, height: 150, className: 'border border-slate-300 rounded bg-white text-slate-900'}} />
-            <div className="flex gap-4 mt-4">
-              <button type="button" onClick={() => setSigningId(null)} className="bg-slate-200 px-4 py-2 rounded font-bold hover:bg-slate-300 transition-colors">Annuler</button>
-              <button type="button" onClick={() => sigCanvas.current?.clear()} className="bg-slate-200 px-4 py-2 rounded font-bold hover:bg-slate-300 transition-colors">Effacer</button>
-              <button type="button" onClick={() => saveSignature(signingId)} className="bg-slate-900 text-white px-4 py-2 rounded font-bold hover:bg-slate-800 transition-colors">Sauvegarder</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
     );
   };
