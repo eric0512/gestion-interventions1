@@ -982,7 +982,7 @@ export default function App() {
               <div className='flex justify-between items-center mb-2'>
                 <button 
                   onClick={() => openForm(i)} 
-                  className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-white' : 'text-white hover:text-amber-600'}`}
+                  className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
                   <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSignature) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
@@ -993,9 +993,9 @@ export default function App() {
                     )}
                   </div>
                   {i.passages && i.passages.length > 1 ? (
-                    <div className="text-xs text-slate-300 font-normal mt-1">Intervenants : {i.passages.length} passages enregistrés</div>
+                    <div className="text-xs text-slate-500 font-normal mt-1">Intervenants : {i.passages.length} passages enregistrés</div>
                   ) : (i.nomIntervenant && (
-                    <div className="text-xs text-slate-300 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
+                    <div className="text-xs text-slate-500 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
                   ))}
                   {i.signature && (
                     <div className="text-[10px] font-bold text-emerald-600 mt-2 uppercase">✓ Document signé</div>
@@ -1107,7 +1107,7 @@ export default function App() {
               <div className='flex justify-between items-center mb-2'>
                 <button 
                   onClick={() => openForm(i)} 
-                  className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-white' : 'text-white hover:text-amber-600'}`}
+                  className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
                   <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSignature) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
@@ -1118,9 +1118,9 @@ export default function App() {
                     )}
                   </div>
                   {i.passages && i.passages.length > 1 ? (
-                    <div className="text-xs text-slate-300 font-normal mt-1">Intervenants : {i.passages.length} passages enregistrés</div>
+                    <div className="text-xs text-slate-500 font-normal mt-1">Intervenants : {i.passages.length} passages enregistrés</div>
                   ) : (i.nomIntervenant && (
-                    <div className="text-xs text-slate-300 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
+                    <div className="text-xs text-slate-500 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
                   ))}
                   {i.signature && (
                     <div className="text-[10px] font-bold text-emerald-600 mt-2 uppercase">✓ Document signé</div>
