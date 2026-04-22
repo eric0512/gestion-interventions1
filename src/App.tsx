@@ -954,10 +954,6 @@ export default function App() {
             </div>
           )}
         </div>
-          <div className="md:col-span-2">
-            {/* Signature moved below */}
-          </div>
-        </section>
 
         <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
           <button 
