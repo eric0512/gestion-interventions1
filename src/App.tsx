@@ -521,7 +521,7 @@ export default function App() {
     <div className="w-full max-w-lg bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg overflow-hidden">
       <div className="bg-[#1B263B] p-6 border-b-4 border-amber-500">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Maintenance <span className="text-amber-500">Pro</span></h1>
+          <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Maintenance <span className="text-amber-500">Colmar</span></h1>
           <div className="flex items-center gap-2">
             {syncStatus === 'synced' && (
               <button onClick={fetchInterventions} title="Synchronisé - Cliquez pour rafraîchir">
