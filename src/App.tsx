@@ -145,6 +145,17 @@ export default function App() {
   const [statsEnd, setStatsEnd] = useState("");
   const sigCanvas = useRef<any>(null);
   const devisInputRef = useRef<HTMLInputElement>(null);
+  const passagesRef = useRef<HTMLDivElement>(null);
+  const formTopRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (view === 'saisie') {
+      // Un petit délai pour s'assurer que le DOM est prêt
+      setTimeout(() => {
+        passagesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [view]);
 
   const fetchInterventions = async () => {
     if (!import.meta.env.VITE_SUPABASE_URL) {
@@ -735,7 +746,8 @@ export default function App() {
     const isArchived = Boolean(formData.signature);
 
     return (
-    <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg">
+    <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
+      <div ref={formTopRef} className="absolute -top-20" />
       <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b-4 border-amber-500 shadow-md">
         <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
           <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm transition-colors">← MENU</button>
@@ -996,7 +1008,7 @@ export default function App() {
         </div>
 
         {currentId && (
-          <section className="border-t border-slate-200 pt-8 mt-8">
+          <section ref={passagesRef} className="border-t border-slate-200 pt-8 mt-8">
             <div className="flex justify-between items-center border-b-2 border-amber-500 pb-1 mb-3">
               <h3 className="text-xs font-black text-white uppercase tracking-wider">Retour de fiche / Passages</h3>
               {formData.passages && formData.passages.length > 0 && !isArchived && (
@@ -1159,6 +1171,16 @@ export default function App() {
           )}
         </section>
       </form>
+
+      {/* Bouton Retour en haut */}
+      <button 
+        type="button"
+        onClick={() => formTopRef.current?.scrollIntoView({ behavior: 'smooth' })}
+        className="fixed bottom-6 right-6 w-12 h-12 bg-amber-500 text-black rounded-full shadow-2xl flex items-center justify-center hover:bg-amber-400 transition-all active:scale-95 z-50 border-2 border-amber-600"
+        title="Retour en haut"
+      >
+        <ChevronUp size={24} />
+      </button>
 
       {signingId && (
         <div className="fixed inset-0 bg-slate-900/50 flex flex-col items-center justify-center p-6 z-[100]">
