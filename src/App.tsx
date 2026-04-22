@@ -323,39 +323,51 @@ export default function App() {
   };
 
   const handleSave = (dataOverride: any = null) => {
-    const dataToValidate = dataOverride || formData;
-    
-    // Validation: Si une date d'intervention est saisie, la raison devient obligatoire
-    const hasIncompletePassage = dataToValidate.passages?.some((p: any) => 
-      p.dateExecution && !p.raisonNouveauPassage
-    );
+    try {
+      const dataToValidate = dataOverride || formData;
+      console.log("Starting handleSave with data:", dataToValidate);
+      
+      // Validation: Si une date d'intervention est saisie, la raison devient obligatoire
+      const hasIncompletePassage = dataToValidate.passages?.some((p: any) => 
+        p.dateExecution && !p.raisonNouveauPassage
+      );
 
-    if (hasIncompletePassage) {
-      alert("Veuillez renseigner la 'Raison de ce nouveau passage' pour toutes les interventions datées.");
-      return;
+      if (hasIncompletePassage) {
+        alert("Veuillez renseigner la 'Raison de ce nouveau passage' pour toutes les interventions datées.");
+        return;
+      }
+
+      let dataToSave = { ...dataToValidate };
+      if (dataToSave.passages && dataToSave.passages.length > 0) {
+        dataToSave.dateExecution = dataToSave.passages[0].dateExecution;
+        dataToSave.nomIntervenant = dataToSave.passages[0].nomIntervenant;
+        dataToSave.tempsPasse = dataToSave.passages[0].tempsPasse;
+        dataToSave.travauxRealises = dataToSave.passages[0].travauxRealises;
+      }
+
+      const newId = currentId || Date.now().toString();
+      const itemToSync = { ...dataToSave, id: newId };
+
+      console.log("Item to save:", itemToSync);
+
+      setInterventions((prev: any[]) => {
+        if (!Array.isArray(prev)) return [itemToSync];
+        if (currentId) {
+          return prev.map((i: any) => i.id === currentId ? itemToSync : i);
+        } else {
+          return [...prev, itemToSync];
+        }
+      });
+      
+      if (!currentId) setCurrentId(newId);
+
+      syncIntervention(itemToSync);
+      setView('menu');
+      console.log("Save successful, returning to menu");
+    } catch (error) {
+      console.error("CRITICAL ERROR in handleSave:", error);
+      alert("Une erreur est survenue lors de la sauvegarde. Détails: " + (error as Error).message);
     }
-
-    let dataToSave = { ...dataToValidate };
-    if (dataToSave.passages && dataToSave.passages.length > 0) {
-      dataToSave.dateExecution = dataToSave.passages[0].dateExecution;
-      dataToSave.nomIntervenant = dataToSave.passages[0].nomIntervenant;
-      dataToSave.tempsPasse = dataToSave.passages[0].tempsPasse;
-      dataToSave.travauxRealises = dataToSave.passages[0].travauxRealises;
-    }
-
-    const newId = currentId || Date.now().toString();
-    const itemToSync = { ...dataToSave, id: newId };
-
-    if (currentId) {
-      setInterventions((prev: any[]) => prev.map((i: any) => i.id === currentId ? itemToSync : i));
-    } else {
-      setInterventions((prev: any[]) => [...prev, itemToSync]);
-      setCurrentId(newId);
-    }
-    
-    console.log("Saving intervention:", itemToSync);
-    syncIntervention(itemToSync);
-    setView('menu');
   };
 
   const parseDuration = (d: string) => {
