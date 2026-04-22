@@ -127,7 +127,6 @@ export default function App() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractStep, setExtractStep] = useState<string | null>(null);
   const [extractionError, setExtractionError] = useState<string | null>(null);
-  const [signingId, setSigningId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('offline');
   const [diagResult, setDiagResult] = useState<string | null>(null);
   const [isUploadingDevis, setIsUploadingDevis] = useState(false);
@@ -300,7 +299,16 @@ export default function App() {
   };
 
   const handleSave = () => {
-    if (formData.signature) return;
+    // Validation: Si une date d'intervention est saisie, la raison devient obligatoire
+    const hasIncompletePassage = formData.passages?.some((p: any) => 
+      p.dateExecution && !p.raisonNouveauPassage
+    );
+
+    if (hasIncompletePassage) {
+      alert("Veuillez renseigner la 'Raison de ce nouveau passage' pour toutes les interventions datées.");
+      return;
+    }
+
     let dataToSave = { ...formData };
     if (dataToSave.passages && dataToSave.passages.length > 0) {
       dataToSave.dateExecution = dataToSave.passages[0].dateExecution;
@@ -743,7 +751,7 @@ export default function App() {
   );
 
   const renderSaisie = () => {
-    const isArchived = Boolean(formData.signature);
+    const isArchived = false; // La signature est supprimée, on considère tout comme éditable
 
     return (
     <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
@@ -1080,49 +1088,34 @@ export default function App() {
                     />
                   </div>
                   
-                  <div className="pt-4 border-t border-slate-200">
-                    <div className="flex items-center gap-2 mb-2">
-                       <input 
-                         type="checkbox" 
-                         id={`nouveauPassage-${passage.id}`} 
-                         checked={passage.nouveauPassageRequis} 
-                         disabled={isArchived}
-                         onChange={(e) => handlePassageChange(passage.id, 'nouveauPassageRequis', e.target.checked)} 
-                         className="rounded text-amber-600 focus:ring-amber-500 cursor-pointer disabled:opacity-75" 
-                       />
-                       <label htmlFor={`nouveauPassage-${passage.id}`} className="text-sm font-bold text-slate-700 cursor-pointer">
-                         Obligation d'un autre passage ?
-                       </label>
+                  <div className="pt-4 border-t border-slate-200 space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">
+                        État / Suite de l'intervention {passage.dateExecution && <span className="text-red-500">*</span>}
+                      </label>
+                      <select 
+                        value={passage.raisonNouveauPassage} 
+                        onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)} 
+                        className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold ${passage.dateExecution && !passage.raisonNouveauPassage ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
+                      >
+                        <option value="">-- Sélectionner l'état --</option>
+                        <option value="Terminé">Terminé</option>
+                        <option value="Demande de devis">Demande de devis</option>
+                        <option value="Pièce(s) manquante(s)">Pièce(s) manquante(s)</option>
+                        <option value="Manque de temps">Manque de temps</option>
+                        <option value="Intervention d'une autre entreprise nécessaire">Intervention d'une autre entreprise nécessaire</option>
+                        <option value="Autre">Autre...</option>
+                      </select>
                     </div>
-                    {passage.nouveauPassageRequis && (
-                      <div className="bg-white p-4 rounded border border-slate-200 mt-3 space-y-3 shadow-sm">
-                         <div>
-                           <label className="block text-[10px] font-bold text-slate-300 uppercase">Raison de ce nouveau passage</label>
-                           <select 
-                             value={passage.raisonNouveauPassage} 
-                             disabled={isArchived}
-                             onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)} 
-                             className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 font-bold disabled:opacity-75"
-                           >
-                              <option value="Demande de devis">Demande de devis</option>
-                              <option value="Pièce(s) manquante(s)">Pièce(s) manquante(s)</option>
-                              <option value="Manque de temps">Manque de temps</option>
-                              <option value="Intervention d'une autre entreprise nécessaire">Intervention d'une autre entreprise nécessaire</option>
-                              <option value="Autre">Autre...</option>
-                           </select>
-                         </div>
-                         {passage.raisonNouveauPassage === 'Autre' && (
-                           <div>
-                             <label className="block text-[10px] font-bold text-slate-300 uppercase">Précisez la raison</label>
-                             <input 
-                               type="text" 
-                               value={passage.autreRaison} 
-                               disabled={isArchived}
-                               onChange={(e) => handlePassageChange(passage.id, 'autreRaison', e.target.value)} 
-                               className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" 
-                             />
-                           </div>
-                         )}
+                    {passage.raisonNouveauPassage === 'Autre' && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-300 uppercase">Précisez la raison</label>
+                        <input 
+                          type="text" 
+                          value={passage.autreRaison} 
+                          onChange={(e) => handlePassageChange(passage.id, 'autreRaison', e.target.value)} 
+                          className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-amber-500 outline-none bg-white text-slate-900" 
+                        />
                       </div>
                     )}
                   </div>
@@ -1144,32 +1137,6 @@ export default function App() {
           </section>
         )}
 
-        <section className="border-t border-slate-200 pt-8">
-          <div className="mb-6">
-            <label className="block text-[10px] font-bold text-slate-300 uppercase">Atelier</label>
-            <input name="atelier" value={formData.atelier} onChange={handleChange} disabled={isArchived} type="text" className="w-full md:w-1/2 border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
-          </div>
-          {currentId && (
-            <div 
-              onClick={() => !isArchived && setSigningId(currentId)}
-              className={`bg-white text-slate-900 p-4 rounded border border-slate-200 transition-colors flex flex-col items-center justify-center min-h-[120px] ${isArchived ? 'cursor-default' : 'hover:bg-slate-100 cursor-pointer'}`}
-            >
-              {formData.signature ? (
-                <div className="flex flex-col items-center">
-                  <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Signature enregistrée</label>
-                  <img src={formData.signature} alt="Signature" className="h-24 w-48 border border-slate-300 rounded bg-white" />
-                </div>
-              ) : (
-                <div className="text-center text-slate-300">
-                  <svg className="mx-auto h-8 w-8 mb-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                  <p className="text-sm font-bold uppercase tracking-wider">Cliquer ici pour signer</p>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
       </form>
 
       {/* Bouton Retour en haut */}
