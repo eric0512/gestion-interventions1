@@ -1453,6 +1453,16 @@ export default function App() {
                   </div>
                 </>
               )}
+          </div>
+
+          <div className="flex justify-between items-center mb-6 bg-amber-500 p-4 rounded-lg shadow-lg border-l-8 border-amber-600">
+            <h2 className="text-base font-black text-black uppercase tracking-tighter">
+              {statsFilter === 'year' && `Interventions ${statsYear} : ${filtered.length}`}
+              {statsFilter === 'month' && `Interventions ${new Date(2000, parseInt(statsMonth)-1).toLocaleString('fr-FR', { month: 'long' })} ${statsYear} : ${filtered.length}`}
+              {statsFilter === 'range' && `Interventions du ${statsStart ? statsStart.split('-').reverse().join('/') : '?'} au ${statsEnd ? statsEnd.split('-').reverse().join('/') : '?'} : ${filtered.length}`}
+            </h2>
+            <div className="bg-black/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-black/60">
+              Total trouvé
             </div>
           </div>
 
