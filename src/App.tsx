@@ -898,7 +898,8 @@ export default function App() {
         </div>
       )}
     </div>
-  );
+    );
+  };
 
   const deleteIntervention = async (id: string) => {
     if (window.confirm("Voulez-vous vraiment supprimer cette intervention ?")) {
