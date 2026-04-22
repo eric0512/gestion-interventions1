@@ -77,12 +77,14 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchStartDate, setSearchStartDate] = useState("");
   const [searchEndDate, setSearchEndDate] = useState(() => getTodayFormatted());
-  const [interventions, setInterventions] = useState(() => {
-    const saved = localStorage.getItem('interventions');
+  const [interventions, setInterventions] = useState<any[]>(() => {
     try {
-      return saved ? JSON.parse(saved) : [];
+      const saved = localStorage.getItem('interventions');
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      console.error("Erreur parsing localStorage:", e);
+      console.error("Erreur critique au chargement du localStorage:", e);
       return [];
     }
   });
@@ -1229,6 +1231,8 @@ export default function App() {
   };
 
   const renderConsultation = () => {
+    if (!Array.isArray(interventions)) return <div className="text-white p-8">Erreur : Les données ne sont pas au bon format.</div>;
+    
     const displayedInterventions = interventions.filter((i: any) => 
       consultationTab === 'enCours' ? !i.archived : i.archived
     );
@@ -1310,6 +1314,8 @@ export default function App() {
   };
 
   const renderRecherche = () => {
+    if (!Array.isArray(interventions)) return <div className="text-white p-8">Erreur : Base de données inaccessible.</div>;
+
     const uniqueBons = Array.from(new Set(interventions.map((i: any) => i.numeroBon).filter(Boolean)));
     const isSearching = Boolean(searchQuery || searchStartDate || searchEndDate);
 
@@ -1428,6 +1434,8 @@ export default function App() {
   };
 
   const renderStats = () => {
+    if (!Array.isArray(interventions)) return <div className="text-white p-8">Erreur : Données de statistiques indisponibles.</div>;
+
     const filtered = interventions.filter((i: any) => {
       const date = i.dateSaisie || "";
       if (!date) return false;
