@@ -1281,7 +1281,8 @@ export default function App() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
           {displayedInterventions.length === 0 && (
             <p className="text-slate-300 italic">
               {consultationTab === 'enCours' 
@@ -1411,7 +1412,8 @@ export default function App() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
         </div>
       </div>
@@ -1496,7 +1498,7 @@ export default function App() {
                   >
                     {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(m => (
                       <option key={m} value={m}>{new Date(2000, parseInt(m)-1).toLocaleString('fr-FR', { month: 'long' }).toUpperCase()}</option>
-                    ))}
+                    )}
                   </select>
                 </div>
               )}
@@ -1602,4 +1604,5 @@ export default function App() {
       </div>
     </div>
   );
+}
 }
