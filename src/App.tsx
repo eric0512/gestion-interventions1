@@ -921,7 +921,7 @@ export default function App() {
     
     return (
       <div className="w-full max-w-4xl bg-white shadow-2xl border border-slate-300 rounded-lg p-8 relative">
-        <button onClick={() => setView('menu')} className="text-slate-500 hover:text-amber-600 font-bold text-sm mb-4 transition-colors">← RETOUR MENU</button>
+        <button onClick={() => setView('menu')} className="text-slate-500 hover:text-amber-600 font-bold text-sm mb-4 transition-colors">← MENU</button>
         <h1 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tighter border-b-4 border-amber-500 inline-block">Consultation</h1>
         
         <div className="flex gap-2 mb-6 border-b border-slate-200 pb-4">
@@ -1007,7 +1007,7 @@ export default function App() {
 
     return (
       <div className="w-full max-w-4xl bg-white shadow-2xl border border-slate-300 rounded-lg p-8 relative">
-        <button onClick={() => setView('menu')} className="text-slate-500 hover:text-amber-600 font-bold text-sm mb-4 transition-colors">← RETOUR MENU</button>
+        <button onClick={() => setView('menu')} className="text-slate-500 hover:text-amber-600 font-bold text-sm mb-4 transition-colors">← MENU</button>
         <h1 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tighter border-b-4 border-amber-500 inline-block">Recherche</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
