@@ -500,6 +500,35 @@ export default function App() {
           reader.readAsDataURL(compressedFile);
         });
         newPhotos.push(dataUrl);
+
+        // Si c'est la toute première photo du buffer, on tente d'extraire la date via l'IA
+        if (pendingDevisPhotos.length === 0 && i === 0 && API_KEY) {
+          console.log("[IA Devis] Tentative d'extraction de la date...");
+          const base64 = dataUrl.split(',')[1];
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+          
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { inlineData: { mimeType: "image/jpeg", data: base64 } },
+                  { text: "Extract the document date from this quote/devis. Output ONLY the date in YYYY-MM-DD format. If no date is found, output 'NONE'." }
+                ]
+              }]
+            })
+          })
+          .then(res => res.json())
+          .then(result => {
+            const dateText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            if (dateText && dateText !== "NONE" && /^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
+              console.log("[IA Devis] Date trouvée :", dateText);
+              setFormData(prev => ({ ...prev, dateDevis: dateText }));
+            }
+          })
+          .catch(err => console.warn("[IA Devis] Échec extraction date:", err));
+        }
       }
       
       setPendingDevisPhotos(prev => [...prev, ...newPhotos]);
