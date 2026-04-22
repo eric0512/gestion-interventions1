@@ -519,11 +519,13 @@ export default function App() {
               }]
             })
           })
-          .then(res => res.json())
+          .then(res => {
+            if (!res.ok) alert("IA Erreur HTTP: " + res.status);
+            return res.json();
+          })
           .then(result => {
             let dateText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
             if (dateText && dateText !== "NONE") {
-              // Nettoyage agressif pour ne garder que Chiffres et Tirets
               dateText = dateText.replace(/[^0-9-]/g, '');
               const match = dateText.match(/\d{4}-\d{2}-\d{2}/);
               if (match) {
@@ -531,14 +533,14 @@ export default function App() {
                 setFormData(prev => ({ ...prev, dateDevis: finalDate }));
                 alert("IA : Date détectée -> " + finalDate.split('-').reverse().join('/'));
               } else {
-                console.log("[IA Devis] Format date invalide:", dateText);
+                alert("IA : Date trouvée mais format illisible: " + dateText);
               }
             } else {
-              console.log("[IA Devis] Aucune date trouvée dans l'image.");
+              alert("IA : Aucune date lisible sur cette photo.");
             }
           })
           .catch(err => {
-            console.error("[IA Devis] Erreur API:", err);
+            alert("IA Erreur Technique: " + err.message);
           });
         }
       }
