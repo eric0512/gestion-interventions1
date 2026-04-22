@@ -131,6 +131,7 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('offline');
   const [diagResult, setDiagResult] = useState<string | null>(null);
   const [isUploadingDevis, setIsUploadingDevis] = useState(false);
+  const [pendingDevisPhotos, setPendingDevisPhotos] = useState<string[]>([]);
   const sigCanvas = useRef<any>(null);
   const devisInputRef = useRef<HTMLInputElement>(null);
 
@@ -480,12 +481,10 @@ export default function App() {
     setIsUploadingDevis(true);
     try {
       const files = Array.from(e.target.files);
-      const pdf = new jsPDF();
+      const newPhotos: string[] = [];
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        
-        // Compression
         const options = {
           maxSizeMB: 0.7,
           maxWidthOrHeight: 1280,
@@ -494,16 +493,35 @@ export default function App() {
         };
         const compressedFile = await imageCompression(file, options);
         
-        // Conversion en DataURL pour jsPDF
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = reject;
           reader.readAsDataURL(compressedFile);
         });
-        
+        newPhotos.push(dataUrl);
+      }
+      
+      setPendingDevisPhotos(prev => [...prev, ...newPhotos]);
+    } catch (err: any) {
+      console.error("Erreur capture photos:", err);
+      alert("Erreur lors de la capture : " + (err.message || "Erreur inconnue"));
+    } finally {
+      setIsUploadingDevis(false);
+    }
+  };
+
+  const generateFinalDevisPDF = async () => {
+    if (pendingDevisPhotos.length === 0) return;
+    
+    setIsUploadingDevis(true);
+    try {
+      const pdf = new jsPDF();
+      
+      for (let i = 0; i < pendingDevisPhotos.length; i++) {
         if (i > 0) pdf.addPage();
         
+        const dataUrl = pendingDevisPhotos[i];
         const imgProps = pdf.getImageProperties(dataUrl);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
@@ -514,7 +532,6 @@ export default function App() {
       const fileName = `devis_${currentId || 'new'}_${Date.now()}.pdf`;
       const filePath = `${currentId || 'temp'}/${fileName}`;
       
-      // Upload vers Supabase (Bucket devis)
       const { data, error } = await supabase.storage
         .from('devis')
         .upload(filePath, pdfBlob);
@@ -527,14 +544,15 @@ export default function App() {
         
       const updatedData = { ...formData, urlDevis: publicUrl };
       setFormData(updatedData);
+      setPendingDevisPhotos([]); // Vider le buffer
       
       if (currentId) {
         syncIntervention({ ...updatedData, id: currentId });
       }
       
-      alert("Devis PDF généré et sauvegardé avec succès !");
+      alert("Devis PDF généré avec succès ! (" + pendingDevisPhotos.length + " pages)");
     } catch (err: any) {
-      console.error("Erreur upload devis:", err);
+      console.error("Erreur génération PDF:", err);
       alert("Erreur lors de la création du PDF : " + (err.message || "Erreur inconnue"));
     } finally {
       setIsUploadingDevis(false);
@@ -808,6 +826,38 @@ export default function App() {
                           </button>
                         )}
                       </div>
+                    ) : pendingDevisPhotos.length > 0 ? (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => devisInputRef.current?.click()}
+                            disabled={isUploadingDevis || isArchived}
+                            className="bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black px-2 py-2 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
+                          >
+                            <Camera size={14} /> + Page
+                          </button>
+                          <button
+                            type="button"
+                            onClick={generateFinalDevisPDF}
+                            disabled={isUploadingDevis || isArchived}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black px-2 py-2 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
+                          >
+                            {isUploadingDevis ? <Loader2 size={14} className="animate-spin" /> : "OK (" + pendingDevisPhotos.length + ")"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPendingDevisPhotos([])}
+                            disabled={isUploadingDevis || isArchived}
+                            className="text-white/50 hover:text-white p-1"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        <p className="text-[9px] text-white/70 font-bold uppercase italic text-center">
+                          {pendingDevisPhotos.length} page(s) en attente
+                        </p>
+                      </div>
                     ) : (
                       <div className="flex items-center gap-2">
                         <button
@@ -824,6 +874,7 @@ export default function App() {
                           ref={devisInputRef}
                           onChange={handleDevisPhotos}
                           accept="image/*" 
+                          capture="environment"
                           multiple 
                           className="hidden" 
                         />
