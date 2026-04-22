@@ -1209,32 +1209,12 @@ export default function App() {
     }
   };
 
-  const saveSignature = (id: string) => {
-    if (sigCanvas.current) {
-      const signature = sigCanvas.current.toDataURL();
-      const dateSignature = getTodayFormatted();
-      const updatedInterventions = interventions.map((i: any) => i.id === id ? { ...i, signature, dateSignature } : i);
-      setInterventions(updatedInterventions);
-      
-      const updatedItem = updatedInterventions.find((i: any) => i.id === id);
-      if (updatedItem) {
-        syncIntervention(updatedItem);
-      }
-      
-      // Update formData if it is the currently edited intervention
-      if (currentId === id) {
-        setFormData(prev => ({ ...prev, signature, dateSignature }));
-      }
-      
-      setSigningId(null);
-    }
-  };
 
   const renderConsultation = () => {
     if (!Array.isArray(interventions)) return <div className="text-white p-8">Erreur : Les données ne sont pas au bon format.</div>;
     
-    const displayedInterventions = interventions.filter((i: any) => 
-      consultationTab === 'enCours' ? !i.archived : i.archived
+    const displayedInterventions = (interventions || []).filter((i: any) => 
+      i && (consultationTab === 'enCours' ? !i.archived : i.archived)
     );
     
     return (
@@ -1268,7 +1248,9 @@ export default function App() {
         </div>
 
         <div className="space-y-4">
-          {displayedInterventions.map((i: any) => (
+          {(displayedInterventions || []).map((i: any) => {
+            if (!i) return null;
+            return (
             <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
               <div className='flex justify-between items-center mb-2'>
                 <button 
@@ -1319,7 +1301,8 @@ export default function App() {
     const uniqueBons = Array.from(new Set(interventions.map((i: any) => i.numeroBon).filter(Boolean)));
     const isSearching = Boolean(searchQuery || searchStartDate || searchEndDate);
 
-    const filteredInterventions = interventions.filter((i: any) => {
+    const filteredInterventions = (interventions || []).filter((i: any) => {
+      if (!i) return false;
       const matchBon = !searchQuery || (i.numeroBon && i.numeroBon.toLowerCase().includes(searchQuery.toLowerCase()));
       
       let matchDate = true;
@@ -1395,7 +1378,9 @@ export default function App() {
           {(!isSearching) && (
             <p className="text-slate-300 italic">Veuillez entrer un numéro de bon ou une plage de dates pour lancer la recherche.</p>
           )}
-          {isSearching && filteredInterventions.map((i: any) => (
+          {isSearching && (filteredInterventions || []).map((i: any) => {
+            if (!i) return null;
+            return (
             <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
               <div className='flex justify-between items-center mb-2'>
                 <button 
@@ -1436,7 +1421,8 @@ export default function App() {
   const renderStats = () => {
     if (!Array.isArray(interventions)) return <div className="text-white p-8">Erreur : Données de statistiques indisponibles.</div>;
 
-    const filtered = interventions.filter((i: any) => {
+    const filtered = (interventions || []).filter((i: any) => {
+      if (!i) return false;
       const date = i.dateSaisie || "";
       if (!date) return false;
       if (statsFilter === 'year') {
@@ -1558,6 +1544,7 @@ export default function App() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((i: any) => {
+                  if (!i) return null;
                   const totalMinutes = (i.passages || []).reduce((acc: number, p: any) => acc + parseDuration(p.tempsPasse), 0);
                   const delay = getDaysElapsed(i.dateDevis, i.dateSaisie);
                   const isLate = isDateOlderThan30Days(i.dateDevis, i.dateSaisie);
