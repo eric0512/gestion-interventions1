@@ -635,21 +635,21 @@ export default function App() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-bold text-slate-300 uppercase">Colmar le</label>
-                <input name="dateSaisie" value={formData.dateSaisie} onChange={handleChange} disabled={isArchived} type="date" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 disabled:opacity-75" />
+                <input name="dateSaisie" value={formData.dateSaisie} onChange={handleChange} disabled={isArchived} type="date" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-slate-300 uppercase">N° de bon</label>
-                <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 font-bold disabled:opacity-75" />
+                <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
               </div>
             </div>
             <h3 className="text-xs font-black text-white border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Informations Demandeur</h3>
             <div>
               <label className="block text-[10px] font-bold text-slate-300 uppercase">Demandeur</label>
-              <input name="demandeur" value={formData.demandeur} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 disabled:opacity-75" />
+              <input name="demandeur" value={formData.demandeur} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-300 uppercase">Référence Bâtiment</label>
-              <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 disabled:opacity-75" />
+              <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -666,7 +666,7 @@ export default function App() {
                   }}
                   type="date" 
                   disabled={isArchived}
-                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 disabled:opacity-75" 
+                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" 
                 />
               </div>
               <div>
@@ -684,7 +684,7 @@ export default function App() {
                   }}
                   type="date" 
                   disabled={isArchived}
-                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 disabled:opacity-75" 
+                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" 
                 />
               </div>
             </div>
@@ -693,16 +693,16 @@ export default function App() {
             <h3 className="text-xs font-black text-white border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Localisation</h3>
             <div>
               <label className="block text-[10px] font-bold text-slate-300 uppercase">Lieu</label>
-              <input name="lieu" value={formData.lieu} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 disabled:opacity-75" />
+              <input name="lieu" value={formData.lieu} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className="block text-[10px] font-bold text-slate-300 uppercase">Étage</label>
-                <input name="etage" value={formData.etage} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 disabled:opacity-75" />
+                <input name="etage" value={formData.etage} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-slate-300 uppercase">Pièce</label>
-                <input name="piece" value={formData.piece} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 disabled:opacity-75" />
+                <input name="piece" value={formData.piece} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
               </div>
             </div>
           </div>
@@ -715,11 +715,11 @@ export default function App() {
           <h3 className="text-xs font-black text-white border-b-2 border-amber-500 pb-1 mb-3 uppercase tracking-wider">Détails de l'Intervention</h3>
           <div className="mb-4">
             <label className="block text-[10px] font-bold text-slate-300 uppercase">Demande</label>
-            <input name="demande" value={formData.demande} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 font-bold disabled:opacity-75" />
+            <input name="demande" value={formData.demande} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
           </div>
           <div>
             <label className="block text-[10px] font-bold text-slate-300 uppercase">Description de l'intervention</label>
-            <textarea name="description" value={formData.description} onChange={handleChange} disabled={isArchived} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 h-24 resize-none disabled:opacity-75" />
+            <textarea name="description" value={formData.description} onChange={handleChange} disabled={isArchived} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 h-24 resize-none disabled:opacity-75" />
           </div>
         </section>
 
@@ -736,7 +736,7 @@ export default function App() {
             
             <div className="space-y-6">
               {formData.passages?.map((passage: any, index: number) => (
-                <div key={passage.id} className="bg-slate-700/50/50 p-4 rounded border border-slate-200 relative">
+                <div key={passage.id} className="bg-white text-slate-900/50 p-4 rounded border border-slate-200 relative">
                   <div className="absolute top-4 right-4">
                      {formData.passages.length > 1 && !isArchived && (
                        <button type="button" onClick={() => removePassage(passage.id)} className="text-red-500 hover:text-red-700" aria-label="Supprimer ce passage">
@@ -818,7 +818,7 @@ export default function App() {
                              value={passage.raisonNouveauPassage} 
                              disabled={isArchived}
                              onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)} 
-                             className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 font-bold disabled:opacity-75"
+                             className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 font-bold disabled:opacity-75"
                            >
                               <option value="Demande de devis">Demande de devis</option>
                               <option value="Pièce(s) manquante(s)">Pièce(s) manquante(s)</option>
@@ -835,7 +835,7 @@ export default function App() {
                                value={passage.autreRaison} 
                                disabled={isArchived}
                                onChange={(e) => handlePassageChange(passage.id, 'autreRaison', e.target.value)} 
-                               className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-amber-500 outline-none bg-slate-700/50 disabled:opacity-75" 
+                               className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" 
                              />
                            </div>
                          )}
@@ -863,12 +863,12 @@ export default function App() {
         <section className="border-t border-slate-200 pt-8">
           <div className="mb-6">
             <label className="block text-[10px] font-bold text-slate-300 uppercase">Atelier</label>
-            <input name="atelier" value={formData.atelier} onChange={handleChange} disabled={isArchived} type="text" className="w-full md:w-1/2 border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-slate-700/50 disabled:opacity-75" />
+            <input name="atelier" value={formData.atelier} onChange={handleChange} disabled={isArchived} type="text" className="w-full md:w-1/2 border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" />
           </div>
           {currentId && (
             <div 
               onClick={() => !isArchived && setSigningId(currentId)}
-              className={`bg-slate-700/50 p-4 rounded border border-slate-200 transition-colors flex flex-col items-center justify-center min-h-[120px] ${isArchived ? 'cursor-default' : 'hover:bg-slate-100 cursor-pointer'}`}
+              className={`bg-white text-slate-900 p-4 rounded border border-slate-200 transition-colors flex flex-col items-center justify-center min-h-[120px] ${isArchived ? 'cursor-default' : 'hover:bg-slate-100 cursor-pointer'}`}
             >
               {formData.signature ? (
                 <div className="flex flex-col items-center">
@@ -892,7 +892,7 @@ export default function App() {
         <div className="fixed inset-0 bg-slate-900/50 flex flex-col items-center justify-center p-6 z-[100]">
           <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
             <h2 className="text-lg font-bold mb-4">Signature</h2>
-            <SignatureCanvas ref={sigCanvas} penColor='black' canvasProps={{width: 300, height: 150, className: 'border border-slate-300 rounded bg-slate-700/50'}} />
+            <SignatureCanvas ref={sigCanvas} penColor='black' canvasProps={{width: 300, height: 150, className: 'border border-slate-300 rounded bg-white text-slate-900'}} />
             <div className="flex gap-4 mt-4">
               <button type="button" onClick={() => setSigningId(null)} className="bg-slate-200 px-4 py-2 rounded font-bold hover:bg-slate-300 transition-colors">Annuler</button>
               <button type="button" onClick={() => sigCanvas.current?.clear()} className="bg-slate-200 px-4 py-2 rounded font-bold hover:bg-slate-300 transition-colors">Effacer</button>
@@ -978,7 +978,7 @@ export default function App() {
 
         <div className="space-y-4">
           {displayedInterventions.map((i: any) => (
-            <div key={i.id} className={`w-full p-4 rounded border ${i.signature ? 'bg-slate-100 border-slate-300' : 'bg-slate-700/50 border-slate-200'}`}>
+            <div key={i.id} className={`w-full p-4 rounded border ${i.signature ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
               <div className='flex justify-between items-center mb-2'>
                 <button 
                   onClick={() => openForm(i)} 
@@ -1103,7 +1103,7 @@ export default function App() {
             <p className="text-slate-300 italic">Veuillez entrer un numéro de bon ou une plage de dates pour lancer la recherche.</p>
           )}
           {isSearching && filteredInterventions.map((i: any) => (
-            <div key={i.id} className={`w-full p-4 rounded border ${i.signature ? 'bg-slate-100 border-slate-300' : 'bg-slate-700/50 border-slate-200'}`}>
+            <div key={i.id} className={`w-full p-4 rounded border ${i.signature ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
               <div className='flex justify-between items-center mb-2'>
                 <button 
                   onClick={() => openForm(i)} 
