@@ -503,45 +503,55 @@ export default function App() {
 
         // Si c'est la toute première photo du buffer, on tente d'extraire la date via l'IA
         if (pendingDevisPhotos.length === 0 && i === 0 && API_KEY) {
-          console.log("[IA Devis] Lancement de l'analyse...");
           const base64 = dataUrl.split(',')[1];
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+          const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash-8b"];
           
-          fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { inlineData: { mimeType: "image/jpeg", data: base64 } },
-                  { text: "Extract the document date from this quote/devis. Output ONLY the date in YYYY-MM-DD format. If you don't find it, write 'NONE'." }
-                ]
-              }]
-            })
-          })
-          .then(res => {
-            if (!res.ok) alert("IA Erreur HTTP: " + res.status);
-            return res.json();
-          })
-          .then(result => {
-            let dateText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-            if (dateText && dateText !== "NONE") {
-              dateText = dateText.replace(/[^0-9-]/g, '');
-              const match = dateText.match(/\d{4}-\d{2}-\d{2}/);
-              if (match) {
-                const finalDate = match[0];
-                setFormData(prev => ({ ...prev, dateDevis: finalDate }));
-                alert("IA : Date détectée -> " + finalDate.split('-').reverse().join('/'));
-              } else {
-                alert("IA : Date trouvée mais format illisible: " + dateText);
-              }
-            } else {
-              alert("IA : Aucune date lisible sur cette photo.");
+          const tryModel = async (modelIdx: number) => {
+            if (modelIdx >= modelsToTry.length) {
+              console.warn("[IA Devis] Tous les modèles ont échoué.");
+              return;
             }
-          })
-          .catch(err => {
-            alert("IA Erreur Technique: " + err.message);
-          });
+            
+            const modelName = modelsToTry[modelIdx];
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
+            
+            try {
+              const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [
+                      { inlineData: { mimeType: "image/jpeg", data: base64 } },
+                      { text: "Extract the document date from this quote/devis. Output ONLY the date in YYYY-MM-DD format. If not found, output 'NONE'." }
+                    ]
+                  }]
+                })
+              });
+              
+              if (!res.ok) {
+                console.log(`[IA Devis] Modèle ${modelName} a échoué (${res.status}). Essai suivant...`);
+                tryModel(modelIdx + 1);
+                return;
+              }
+              
+              const result = await res.json();
+              let dateText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+              if (dateText && dateText !== "NONE") {
+                dateText = dateText.replace(/[^0-9-]/g, '');
+                const match = dateText.match(/\d{4}-\d{2}-\d{2}/);
+                if (match) {
+                  const finalDate = match[0];
+                  setFormData(prev => ({ ...prev, dateDevis: finalDate }));
+                  alert("IA : Date détectée -> " + finalDate.split('-').reverse().join('/'));
+                }
+              }
+            } catch (err) {
+              tryModel(modelIdx + 1);
+            }
+          };
+          
+          tryModel(0);
         }
       }
       
