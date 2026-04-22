@@ -503,10 +503,9 @@ export default function App() {
 
         // Si c'est la toute première photo du buffer, on tente d'extraire la date via l'IA
         if (pendingDevisPhotos.length === 0 && i === 0 && API_KEY) {
-          console.log("[IA Devis] Tentative d'extraction de la date...");
+          console.log("[IA Devis] Tentative avec gemini-2.0-flash...");
           const base64 = dataUrl.split(',')[1];
-          // Utilisation de 1.5-flash qui est très stable
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
           
           fetch(url, {
             method: 'POST',
@@ -515,21 +514,26 @@ export default function App() {
               contents: [{
                 parts: [
                   { inlineData: { mimeType: "image/jpeg", data: base64 } },
-                  { text: "Extract the document date from this quote/devis. Output ONLY the date in YYYY-MM-DD format. No other text." }
+                  { text: "Extract the document date from this quote/devis. Output the response strictly as a JSON object with this key: dateDevis. The date must be in YYYY-MM-DD format." }
                 ]
-              }]
+              }],
+              generationConfig: { response_mime_type: "application/json" }
             })
           })
           .then(res => res.json())
           .then(result => {
-            let dateText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-            if (dateText) {
-              // Nettoyage au cas où l'IA met des guillemets ou du markdown
-              dateText = dateText.replace(/[^0-9-]/g, ''); 
-              if (/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
-                console.log("[IA Devis] Date trouvée :", dateText);
-                setFormData(prev => ({ ...prev, dateDevis: dateText }));
-                alert("IA : Date du devis détectée (" + dateText.split('-').reverse().join('/') + ")");
+            console.log("[IA Devis] Réponse brute:", result);
+            const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (responseText) {
+              try {
+                const extracted = JSON.parse(responseText.trim());
+                if (extracted.dateDevis && /^\d{4}-\d{2}-\d{2}$/.test(extracted.dateDevis)) {
+                  console.log("[IA Devis] Date trouvée :", extracted.dateDevis);
+                  setFormData(prev => ({ ...prev, dateDevis: extracted.dateDevis }));
+                  alert("IA : Date du devis détectée (" + extracted.dateDevis.split('-').reverse().join('/') + ")");
+                }
+              } catch (e) {
+                console.warn("[IA Devis] Erreur parsing JSON", e);
               }
             }
           })
