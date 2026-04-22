@@ -305,10 +305,11 @@ export default function App() {
       setInterventions(interventions.map((i: any) => i.id === currentId ? itemToSync : i));
     } else {
       setInterventions([...interventions, itemToSync]);
+      setCurrentId(newId);
     }
     
     syncIntervention(itemToSync);
-    setView('menu');
+    // On ne change plus de vue pour rester sur la page ouverte
   };
 
   const parseDuration = (d: string) => {
