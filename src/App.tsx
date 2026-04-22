@@ -354,7 +354,7 @@ export default function App() {
     }
     
     syncIntervention(itemToSync);
-    // On ne change plus de vue pour rester sur la page ouverte
+    setView('menu');
   };
 
   const parseDuration = (d: string) => {
