@@ -518,24 +518,27 @@ export default function App() {
   };
 
   const renderMenu = () => (
-    <div className="w-full max-w-lg bg-white shadow-2xl border border-slate-300 rounded-lg p-8">
-      <div className="flex justify-between items-center mb-8 border-b-2 border-amber-500 pb-4">
-        <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Maintenance <span className="text-amber-500">Pro</span></h1>
-        <div className="flex items-center gap-2">
-          {syncStatus === 'synced' && (
-            <button onClick={fetchInterventions} title="Synchronisé - Cliquez pour rafraîchir">
-              <Cloud size={20} className="text-emerald-500 hover:text-emerald-600 transition-colors" />
-            </button>
-          )}
-          {syncStatus === 'syncing' && <RefreshCw size={20} className="text-amber-500 animate-spin" title="Synchronisation..." />}
-          {syncStatus === 'error' && (
-            <button onClick={fetchInterventions} title="Erreur - Cliquez pour réessayer">
-              <CloudOff size={20} className="text-red-500 hover:text-red-600 transition-colors" />
-            </button>
-          )}
-          {syncStatus === 'offline' && <CloudOff size={20} className="text-slate-400" title="Mode hors-ligne" />}
+    <div className="w-full max-w-lg bg-white shadow-2xl border border-slate-300 rounded-lg overflow-hidden">
+      <div className="bg-[#1B263B] p-6 border-b-4 border-amber-500">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Maintenance <span className="text-amber-500">Pro</span></h1>
+          <div className="flex items-center gap-2">
+            {syncStatus === 'synced' && (
+              <button onClick={fetchInterventions} title="Synchronisé - Cliquez pour rafraîchir">
+                <Cloud size={20} className="text-emerald-400 hover:text-emerald-300 transition-colors" />
+              </button>
+            )}
+            {syncStatus === 'syncing' && <RefreshCw size={20} className="text-amber-500 animate-spin" title="Synchronisation..." />}
+            {syncStatus === 'error' && (
+              <button onClick={fetchInterventions} title="Erreur - Cliquez pour réessayer">
+                <CloudOff size={20} className="text-red-400 hover:text-red-300 transition-colors" />
+              </button>
+            )}
+            {syncStatus === 'offline' && <CloudOff size={20} className="text-slate-400" title="Mode hors-ligne" />}
+          </div>
         </div>
       </div>
+      <div className="p-8">
       <div className="space-y-6 pb-2">
         <button 
           onClick={() => openForm()} 
@@ -564,6 +567,7 @@ export default function App() {
       <div className="mt-8 pt-4 border-t border-slate-200 flex justify-center">
         <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Système Industriel v2.5</p>
       </div>
+      </div>
     </div>
   );
 
@@ -572,7 +576,7 @@ export default function App() {
 
     return (
     <div className="w-full max-w-4xl bg-white shadow-2xl border border-slate-300 rounded-lg overflow-hidden">
-      <header className="bg-slate-900 text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b-4 border-amber-500">
+      <header className="bg-[#1B263B] text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b-4 border-amber-500">
         <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
           <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm transition-colors">← MENU</button>
           <div>
@@ -943,9 +947,19 @@ export default function App() {
     );
     
     return (
-      <div className="w-full max-w-4xl bg-white shadow-2xl border border-slate-300 rounded-lg p-8 relative">
-        <button onClick={() => setView('menu')} className="text-slate-500 hover:text-amber-600 font-bold text-sm mb-4 transition-colors">← MENU</button>
-        <h1 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tighter border-b-4 border-amber-500 inline-block">Consultation</h1>
+      <div className="w-full max-w-4xl bg-white shadow-2xl border border-slate-300 rounded-lg overflow-hidden relative">
+        <header className="bg-[#1B263B] text-white p-4 md:p-6 border-b-4 border-amber-500">
+          <div className="flex justify-between items-center">
+            <div>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <h1 className="text-2xl font-black uppercase tracking-tighter">Consultation</h1>
+            </div>
+            <div className="text-right">
+               <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest">Archive & Suivi</p>
+            </div>
+          </div>
+        </header>
+        <div className="p-8">
         
         <div className="flex gap-2 mb-6 border-b border-slate-200 pb-4">
           <button 
@@ -1003,6 +1017,7 @@ export default function App() {
             </p>
           )}
         </div>
+        </div>
       </div>
     );
   };
@@ -1029,9 +1044,19 @@ export default function App() {
     });
 
     return (
-      <div className="w-full max-w-4xl bg-white shadow-2xl border border-slate-300 rounded-lg p-8 relative">
-        <button onClick={() => setView('menu')} className="text-slate-500 hover:text-amber-600 font-bold text-sm mb-4 transition-colors">← MENU</button>
-        <h1 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tighter border-b-4 border-amber-500 inline-block">Recherche</h1>
+      <div className="w-full max-w-4xl bg-white shadow-2xl border border-slate-300 rounded-lg overflow-hidden relative">
+        <header className="bg-[#1B263B] text-white p-4 md:p-6 border-b-4 border-amber-500">
+          <div className="flex justify-between items-center">
+            <div>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <h1 className="text-2xl font-black uppercase tracking-tighter">Recherche</h1>
+            </div>
+            <div className="text-right">
+               <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest">Base de données</p>
+            </div>
+          </div>
+        </header>
+        <div className="p-8">
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="md:col-span-2">
@@ -1110,12 +1135,13 @@ export default function App() {
             </div>
           ))}
         </div>
+        </div>
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-slate-200 p-6 font-sans text-slate-800">
+    <div className="min-h-screen bg-[#415A77] p-6 font-sans text-slate-800">
       <div className="max-w-4xl mx-auto">
         {view === 'menu' && renderMenu()}
         {view === 'saisie' && renderSaisie()}
