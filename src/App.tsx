@@ -503,9 +503,9 @@ export default function App() {
 
         // Si c'est la toute première photo du buffer, on tente d'extraire la date via l'IA
         if (pendingDevisPhotos.length === 0 && i === 0 && API_KEY) {
-          console.log("[IA Devis] Tentative avec gemini-2.0-flash...");
+          console.log("[IA Devis] Lancement de l'analyse...");
           const base64 = dataUrl.split(',')[1];
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
           
           fetch(url, {
             method: 'POST',
@@ -514,30 +514,32 @@ export default function App() {
               contents: [{
                 parts: [
                   { inlineData: { mimeType: "image/jpeg", data: base64 } },
-                  { text: "Extract the document date from this quote/devis. Output the response strictly as a JSON object with this key: dateDevis. The date must be in YYYY-MM-DD format." }
+                  { text: "Extract the document date from this quote/devis. Output ONLY the date in YYYY-MM-DD format. If you don't find it, write 'NONE'." }
                 ]
-              }],
-              generationConfig: { response_mime_type: "application/json" }
+              }]
             })
           })
           .then(res => res.json())
           .then(result => {
-            console.log("[IA Devis] Réponse brute:", result);
-            const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (responseText) {
-              try {
-                const extracted = JSON.parse(responseText.trim());
-                if (extracted.dateDevis && /^\d{4}-\d{2}-\d{2}$/.test(extracted.dateDevis)) {
-                  console.log("[IA Devis] Date trouvée :", extracted.dateDevis);
-                  setFormData(prev => ({ ...prev, dateDevis: extracted.dateDevis }));
-                  alert("IA : Date du devis détectée (" + extracted.dateDevis.split('-').reverse().join('/') + ")");
-                }
-              } catch (e) {
-                console.warn("[IA Devis] Erreur parsing JSON", e);
+            let dateText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            if (dateText && dateText !== "NONE") {
+              // Nettoyage agressif pour ne garder que Chiffres et Tirets
+              dateText = dateText.replace(/[^0-9-]/g, '');
+              const match = dateText.match(/\d{4}-\d{2}-\d{2}/);
+              if (match) {
+                const finalDate = match[0];
+                setFormData(prev => ({ ...prev, dateDevis: finalDate }));
+                alert("IA : Date détectée -> " + finalDate.split('-').reverse().join('/'));
+              } else {
+                console.log("[IA Devis] Format date invalide:", dateText);
               }
+            } else {
+              console.log("[IA Devis] Aucune date trouvée dans l'image.");
             }
           })
-          .catch(err => console.warn("[IA Devis] Échec extraction date:", err));
+          .catch(err => {
+            console.error("[IA Devis] Erreur API:", err);
+          });
         }
       }
       
