@@ -70,7 +70,7 @@ const isDateOlderThan30Days = (dateStr: string, endDateStr?: string) => {
 };
 
 export default function App() {
-  const [view, setView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche'>(() => {
+  const [view, setView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche' | 'stats'>(() => {
     return (sessionStorage.getItem('app_view') as any) || 'menu';
   });
   const [consultationTab, setConsultationTab] = useState<'enCours' | 'archivees'>('enCours');
@@ -132,6 +132,11 @@ export default function App() {
   const [diagResult, setDiagResult] = useState<string | null>(null);
   const [isUploadingDevis, setIsUploadingDevis] = useState(false);
   const [pendingDevisPhotos, setPendingDevisPhotos] = useState<string[]>([]);
+  const [statsFilter, setStatsFilter] = useState<'year' | 'month' | 'range'>('year');
+  const [statsYear, setStatsYear] = useState(() => new Date().getFullYear().toString());
+  const [statsMonth, setStatsMonth] = useState(() => (new Date().getMonth() + 1).toString().padStart(2, '0'));
+  const [statsStart, setStatsStart] = useState("");
+  const [statsEnd, setStatsEnd] = useState("");
   const sigCanvas = useRef<any>(null);
   const devisInputRef = useRef<HTMLInputElement>(null);
 
@@ -298,6 +303,20 @@ export default function App() {
     
     syncIntervention(itemToSync);
     setView('menu');
+  };
+
+  const parseDuration = (d: string) => {
+    if (!d) return 0;
+    const match = d.match(/(\d+)h(\d+)/i);
+    if (match) return parseInt(match[1]) * 60 + parseInt(match[2]);
+    const hours = parseInt(d);
+    return isNaN(hours) ? 0 : hours * 60;
+  };
+
+  const formatDuration = (min: number) => {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return `${String(h).padStart(2, '0')}h${String(m).padStart(2, '0')}`;
   };
 
   const processImage = async (file: File) => {
@@ -677,6 +696,12 @@ export default function App() {
           className="w-full text-left px-6 py-5 bg-slate-100 text-slate-800 font-black rounded-xl flex items-center justify-between border-2 border-slate-300 shadow-[0_6px_0_0_#94a3b8] hover:bg-slate-200 hover:shadow-[0_4px_0_0_#94a3b8] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#94a3b8] active:translate-y-[6px] transition-all duration-150 uppercase tracking-tight"
         >
           Recherche d'intervention <span className="text-2xl">→</span>
+        </button>
+        <button 
+          onClick={() => setView('stats')} 
+          className="w-full text-left px-6 py-5 bg-zinc-800 text-white font-black rounded-xl flex items-center justify-between border-2 border-zinc-900 shadow-[0_6px_0_0_#18181b] hover:bg-zinc-700 hover:shadow-[0_4px_0_0_#18181b] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#18181b] active:translate-y-[6px] transition-all duration-150 uppercase tracking-tight"
+        >
+          Statistiques <span className="text-2xl">→</span>
         </button>
       </div>
       <div className="mt-8 pt-4 border-t border-slate-200 flex justify-center">
@@ -1337,6 +1362,162 @@ export default function App() {
     );
   };
 
+  const renderStats = () => {
+    const filtered = interventions.filter((i: any) => {
+      const date = i.dateSaisie || "";
+      if (!date) return false;
+      if (statsFilter === 'year') {
+        return date.startsWith(statsYear);
+      } else if (statsFilter === 'month') {
+        return date.startsWith(`${statsYear}-${statsMonth}`);
+      } else {
+        if (!statsStart || !statsEnd) return true;
+        return date >= statsStart && date <= statsEnd;
+      }
+    });
+
+    const years = Array.from(new Set(interventions.map((i: any) => (i.dateSaisie || "").substring(0, 4)).filter(Boolean))).sort().reverse();
+
+    return (
+      <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
+        <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b-4 border-amber-500 shadow-md">
+          <div className="flex justify-between items-center">
+            <div>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <h1 className="text-2xl font-black uppercase tracking-tighter">Statistiques</h1>
+            </div>
+            <div className="text-right">
+               <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest">Reporting Analytique</p>
+            </div>
+          </div>
+        </header>
+
+        <div className="p-8">
+          <div className="bg-[#1B263B]/30 p-6 rounded-xl border border-white/10 mb-8 space-y-6">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-300 uppercase mb-3">Filtrer les statistiques par :</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 'year', label: 'Par Année' },
+                  { id: 'month', label: 'Par Mois' },
+                  { id: 'range', label: 'Par Date' }
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setStatsFilter(f.id as any)}
+                    className={`px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest transition-all ${statsFilter === f.id ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end">
+              {(statsFilter === 'year' || statsFilter === 'month') && (
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Choisir l'année</label>
+                  <select 
+                    value={statsYear} 
+                    onChange={(e) => setStatsYear(e.target.value)}
+                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-bold"
+                  >
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                    {!years.includes(new Date().getFullYear().toString()) && <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>}
+                  </select>
+                </div>
+              )}
+              {statsFilter === 'month' && (
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Choisir le mois</label>
+                  <select 
+                    value={statsMonth} 
+                    onChange={(e) => setStatsMonth(e.target.value)}
+                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-bold"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(m => (
+                      <option key={m} value={m}>{new Date(2000, parseInt(m)-1).toLocaleString('fr-FR', { month: 'long' }).toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {statsFilter === 'range' && (
+                <>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Début</label>
+                    <input type="date" value={statsStart} onChange={(e) => setStatsStart(e.target.value)} className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Fin</label>
+                    <input type="date" value={statsEnd} onChange={(e) => setStatsEnd(e.target.value)} className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto bg-white rounded-xl shadow-xl">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest">
+                  <th className="px-4 py-4">N° Bon</th>
+                  <th className="px-4 py-4">Description / Lieu</th>
+                  <th className="px-4 py-4">Temps Cumulé</th>
+                  <th className="px-4 py-4">État / Retard</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((i: any) => {
+                  const totalMinutes = (i.passages || []).reduce((acc: number, p: any) => acc + parseDuration(p.tempsPasse), 0);
+                  const delay = getDaysElapsed(i.dateDevis, i.dateSignature);
+                  const isLate = isDateOlderThan30Days(i.dateDevis, i.dateSignature);
+
+                  return (
+                    <tr key={i.id} className={`hover:bg-slate-50 transition-colors ${isLate ? 'bg-red-50' : ''}`}>
+                      <td className="px-4 py-4">
+                        <button 
+                          onClick={() => openForm(i)}
+                          className="text-amber-600 hover:text-amber-700 font-black underline decoration-2 underline-offset-4"
+                        >
+                          {i.numeroBon || "VOIR"}
+                        </button>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm font-bold text-slate-900">{i.demande || "SANS TITRE"}</div>
+                        <div className="text-[10px] text-slate-500 uppercase font-bold">{i.lieu}</div>
+                      </td>
+                      <td className="px-4 py-4 text-sm font-black text-slate-700">
+                        {formatDuration(totalMinutes)}
+                      </td>
+                      <td className="px-4 py-4">
+                        {isLate ? (
+                          <span className="inline-block px-2 py-1 bg-red-600 text-white text-[10px] font-black rounded uppercase">
+                            RETARD +{delay}j
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded uppercase">
+                            CONFORME
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-12 text-center text-slate-400 italic">
+                      Aucune donnée trouvée pour cette période.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#415A77] p-6 font-sans text-slate-800">
       <div className="max-w-4xl mx-auto">
@@ -1344,6 +1525,7 @@ export default function App() {
         {view === 'saisie' && renderSaisie()}
         {view === 'consultation' && renderConsultation()}
         {view === 'recherche' && renderRecherche()}
+        {view === 'stats' && renderStats()}
       </div>
     </div>
   );
