@@ -774,12 +774,12 @@ export default function App() {
         </div>
       )}
 
-      <form className="p-8 space-y-8">
+      <form className="p-4 md:p-6 space-y-3">
         <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
           <button 
             type="button"
             onClick={() => setCollapsedSections(prev => ({ ...prev, admin: !prev.admin }))}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
           >
             <h3 className="text-xs font-black text-amber-500 uppercase tracking-wider flex items-center gap-2">
               <FileText size={16} /> Données Administratives
@@ -801,7 +801,7 @@ export default function App() {
           )}
         </div>
         <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
-          <div className="p-4">
+          <div className="p-3">
             <h3 className="text-xs font-black text-amber-500 uppercase tracking-wider flex items-center gap-2 mb-4">
               <User size={16} /> Informations Demandeur
             </h3>
@@ -927,7 +927,7 @@ export default function App() {
           <button 
             type="button"
             onClick={() => setCollapsedSections(prev => ({ ...prev, localisation: !prev.localisation }))}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
           >
             <h3 className="text-xs font-black text-amber-500 uppercase tracking-wider flex items-center gap-2">
               <MapPin size={16} /> Localisation
@@ -959,7 +959,7 @@ export default function App() {
           <button 
             type="button"
             onClick={() => setCollapsedSections(prev => ({ ...prev, details: !prev.details }))}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
           >
             <h3 className="text-xs font-black text-amber-500 uppercase tracking-wider flex items-center gap-2">
               <Settings size={16} /> Détails de l'intervention
