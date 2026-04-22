@@ -513,15 +513,15 @@ export default function App() {
       const fileName = `devis_${currentId || 'new'}_${Date.now()}.pdf`;
       const filePath = `${currentId || 'temp'}/${fileName}`;
       
-      // Upload vers Supabase (Bucket DEVIS)
+      // Upload vers Supabase (Bucket devis)
       const { data, error } = await supabase.storage
-        .from('DEVIS')
+        .from('devis')
         .upload(filePath, pdfBlob);
         
       if (error) throw error;
       
       const { data: { publicUrl } } = supabase.storage
-        .from('DEVIS')
+        .from('devis')
         .getPublicUrl(filePath);
         
       const updatedData = { ...formData, urlDevis: publicUrl };
