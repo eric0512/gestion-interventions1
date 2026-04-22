@@ -1008,7 +1008,7 @@ export default function App() {
         </div>
 
         {currentId && (
-          <section ref={passagesRef} className="border-t border-slate-200 pt-8 mt-8">
+          <section ref={passagesRef} className="border-t border-slate-200 pt-8 mt-8 scroll-mt-32">
             <div className="flex justify-between items-center border-b-2 border-amber-500 pb-1 mb-3">
               <h3 className="text-xs font-black text-white uppercase tracking-wider">Retour de fiche / Passages</h3>
               {formData.passages && formData.passages.length > 0 && !isArchived && (
