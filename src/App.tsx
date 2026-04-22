@@ -740,53 +740,59 @@ export default function App() {
                 />
               </div>
               <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Date de devis</label>
-                  <div className="flex gap-2">
-                    {formData.urlDevis && (
+                <label className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Date de devis</label>
+                <div className="flex items-center gap-3">
+                  <div className="flex-grow max-w-[160px]">
+                    <input 
+                      name="dateDevis" 
+                      value={formData.dateDevis} 
+                      min={formData.dateDemande || formData.dateSaisie} 
+                      onChange={handleChange} 
+                      onFocus={() => {
+                        const fallbackDate = formData.dateDemande || formData.dateSaisie;
+                        if (!formData.dateDevis && fallbackDate) {
+                          setFormData(prev => ({ ...prev, dateDevis: fallbackDate }));
+                        }
+                      }}
+                      type="date" 
+                      disabled={isArchived}
+                      className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" 
+                    />
+                  </div>
+                  
+                  <div className="flex-shrink-0">
+                    {formData.urlDevis ? (
                       <a 
                         href={formData.urlDevis} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 uppercase flex items-center gap-1"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black px-3 py-2 rounded uppercase flex items-center gap-2 transition-colors shadow-sm"
                       >
-                        <FileText size={12} /> Voir Devis
+                        <FileText size={14} /> Voir Devis
                       </a>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => devisInputRef.current?.click()}
+                          disabled={isUploadingDevis || isArchived}
+                          className="bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black px-3 py-2 rounded uppercase flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50"
+                        >
+                          {isUploadingDevis ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                          {isUploadingDevis ? 'Traitement...' : 'Photo Devis'}
+                        </button>
+                        <input 
+                          type="file" 
+                          ref={devisInputRef}
+                          onChange={handleDevisPhotos}
+                          accept="image/*" 
+                          multiple 
+                          className="hidden" 
+                        />
+                      </div>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => devisInputRef.current?.click()}
-                      disabled={isUploadingDevis || isArchived}
-                      className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase flex items-center gap-1 disabled:opacity-50"
-                    >
-                      {isUploadingDevis ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
-                      {isUploadingDevis ? 'Traitement...' : 'Photo Devis'}
-                    </button>
-                    <input 
-                      type="file" 
-                      ref={devisInputRef}
-                      onChange={handleDevisPhotos}
-                      accept="image/*" 
-                      multiple 
-                      className="hidden" 
-                    />
                   </div>
                 </div>
-                <input 
-                  name="dateDevis" 
-                  value={formData.dateDevis} 
-                  min={formData.dateDemande || formData.dateSaisie} 
-                  onChange={handleChange} 
-                  onFocus={() => {
-                    const fallbackDate = formData.dateDemande || formData.dateSaisie;
-                    if (!formData.dateDevis && fallbackDate) {
-                      setFormData(prev => ({ ...prev, dateDevis: fallbackDate }));
-                    }
-                  }}
-                  type="date" 
-                  disabled={isArchived}
-                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white text-slate-900 disabled:opacity-75" 
-                />
               </div>
             </div>
           </div>
