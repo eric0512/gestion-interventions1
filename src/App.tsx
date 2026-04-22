@@ -39,7 +39,6 @@ if (API_KEY) {
 }
 
 
-// ... (remaining of the file)
 
 /**
  * @license
@@ -1498,7 +1497,7 @@ export default function App() {
                   >
                     {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(m => (
                       <option key={m} value={m}>{new Date(2000, parseInt(m)-1).toLocaleString('fr-FR', { month: 'long' }).toUpperCase()}</option>
-                    )}
+                    ))}
                   </select>
                 </div>
               )}
@@ -1604,5 +1603,4 @@ export default function App() {
       </div>
     </div>
   );
-}
 }
