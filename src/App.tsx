@@ -260,20 +260,44 @@ export default function App() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    if (formData.signature) return;
+    if (formData.archived) return;
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handlePassageChange = (id: string, field: string, value: any) => {
-    if (formData.signature) return;
-    setFormData((prev: any) => ({
-      ...prev,
-      passages: prev.passages.map((p: any) => p.id === id ? { ...p, [field]: value } : p)
-    }));
+    if (formData.archived) return;
+    setFormData((prev: any) => {
+      const newPassages = prev.passages.map((p: any) => p.id === id ? { ...p, [field]: value } : p);
+      const currentPassage = newPassages.find((p: any) => p.id === id);
+      
+      let nextArchived = prev.archived;
+      let shouldTriggerSave = false;
+
+      // Logique de clôture automatique
+      if (field === 'raisonNouveauPassage' && value === 'Terminé' && currentPassage?.dateExecution) {
+        if (window.confirm("Voulez vous cloturer cette intervention?")) {
+          nextArchived = true;
+          shouldTriggerSave = true;
+        }
+      }
+
+      const nextData = {
+        ...prev,
+        passages: newPassages,
+        archived: nextArchived
+      };
+
+      if (shouldTriggerSave) {
+        // On sauvegarde immédiatement après la mise à jour de l'état
+        setTimeout(() => handleSave(nextData), 100);
+      }
+
+      return nextData;
+    });
   };
 
   const addPassage = () => {
-    if (formData.signature) return;
+    if (formData.archived) return;
     setFormData((prev: any) => ({
       ...prev,
       passages: [...(prev.passages || []), {
@@ -290,7 +314,7 @@ export default function App() {
   };
 
   const removePassage = (id: string) => {
-    if (formData.signature) return;
+    if (formData.archived) return;
     if (!window.confirm("Voulez-vous vraiment supprimer ce passage ?")) return;
     setFormData((prev: any) => ({
       ...prev,
@@ -298,9 +322,11 @@ export default function App() {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = (dataOverride: any = null) => {
+    const dataToValidate = dataOverride || formData;
+    
     // Validation: Si une date d'intervention est saisie, la raison devient obligatoire
-    const hasIncompletePassage = formData.passages?.some((p: any) => 
+    const hasIncompletePassage = dataToValidate.passages?.some((p: any) => 
       p.dateExecution && !p.raisonNouveauPassage
     );
 
@@ -309,7 +335,7 @@ export default function App() {
       return;
     }
 
-    let dataToSave = { ...formData };
+    let dataToSave = { ...dataToValidate };
     if (dataToSave.passages && dataToSave.passages.length > 0) {
       dataToSave.dateExecution = dataToSave.passages[0].dateExecution;
       dataToSave.nomIntervenant = dataToSave.passages[0].nomIntervenant;
@@ -751,7 +777,7 @@ export default function App() {
   );
 
   const renderSaisie = () => {
-    const isArchived = false; // La signature est supprimée, on considère tout comme éditable
+    const isArchived = Boolean(formData.archived);
 
     return (
     <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
@@ -1191,7 +1217,7 @@ export default function App() {
 
   const renderConsultation = () => {
     const displayedInterventions = interventions.filter((i: any) => 
-      consultationTab === 'enCours' ? !i.signature : i.signature
+      consultationTab === 'enCours' ? !i.archived : i.archived
     );
     
     return (
@@ -1226,17 +1252,17 @@ export default function App() {
 
         <div className="space-y-4">
           {displayedInterventions.map((i: any) => (
-            <div key={i.id} className={`w-full p-4 rounded border ${i.signature ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
+            <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
               <div className='flex justify-between items-center mb-2'>
                 <button 
                   onClick={() => handleOpenSaisie(i)} 
-                  className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
+                  className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
-                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSignature) ? 'text-red-600' : ''}`}>
+                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSaisie) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
-                    {isDateOlderThan30Days(i.dateDevis, i.dateSignature) && (
+                    {isDateOlderThan30Days(i.dateDevis, i.dateSaisie) && (
                       <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard (+{getDaysElapsed(i.dateDevis, i.dateSignature)}j)
+                        En retard (+{getDaysElapsed(i.dateDevis, i.dateSaisie)}j)
                       </span>
                     )}
                   </div>
@@ -1245,8 +1271,8 @@ export default function App() {
                   ) : (i.nomIntervenant && (
                     <div className="text-xs text-slate-500 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
                   ))}
-                  {i.signature && (
-                    <div className="text-[10px] font-bold text-emerald-600 mt-2 uppercase">✓ Document signé</div>
+                  {i.archived && (
+                    <div className="text-[10px] font-bold text-emerald-600 mt-2 uppercase">✓ Intervention clôturée</div>
                   )}
                 </button>
                 <div className='flex gap-2'>
@@ -1351,17 +1377,17 @@ export default function App() {
             <p className="text-slate-300 italic">Veuillez entrer un numéro de bon ou une plage de dates pour lancer la recherche.</p>
           )}
           {isSearching && filteredInterventions.map((i: any) => (
-            <div key={i.id} className={`w-full p-4 rounded border ${i.signature ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
+            <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
               <div className='flex justify-between items-center mb-2'>
                 <button 
                   onClick={() => handleOpenSaisie(i)} 
-                  className={`flex-grow font-bold text-left transition-colors ${i.signature ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
+                  className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-amber-600'}`}
                 >
-                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSignature) ? 'text-red-600' : ''}`}>
+                  <div className={`text-base ${isDateOlderThan30Days(i.dateDevis, i.dateSaisie) ? 'text-red-600' : ''}`}>
                     {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
-                    {isDateOlderThan30Days(i.dateDevis, i.dateSignature) && (
+                    {isDateOlderThan30Days(i.dateDevis, i.dateSaisie) && (
                       <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard (+{getDaysElapsed(i.dateDevis, i.dateSignature)}j)
+                        En retard (+{getDaysElapsed(i.dateDevis, i.dateSaisie)}j)
                       </span>
                     )}
                   </div>
@@ -1370,8 +1396,8 @@ export default function App() {
                   ) : (i.nomIntervenant && (
                     <div className="text-xs text-slate-500 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
                   ))}
-                  {i.signature && (
-                    <div className="text-[10px] font-bold text-emerald-600 mt-2 uppercase">✓ Document signé</div>
+                  {i.archived && (
+                    <div className="text-[10px] font-bold text-emerald-600 mt-2 uppercase">✓ Intervention clôturée</div>
                   )}
                 </button>
                 <div className='flex gap-2'>
@@ -1512,8 +1538,8 @@ export default function App() {
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((i: any) => {
                   const totalMinutes = (i.passages || []).reduce((acc: number, p: any) => acc + parseDuration(p.tempsPasse), 0);
-                  const delay = getDaysElapsed(i.dateDevis, i.dateSignature);
-                  const isLate = isDateOlderThan30Days(i.dateDevis, i.dateSignature);
+                  const delay = getDaysElapsed(i.dateDevis, i.dateSaisie);
+                  const isLate = isDateOlderThan30Days(i.dateDevis, i.dateSaisie);
 
                   return (
                     <tr key={i.id} className={`hover:bg-slate-50 transition-colors ${isLate ? 'bg-red-50' : ''}`}>
