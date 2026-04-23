@@ -349,7 +349,7 @@ export default function App() {
       ...prev,
       passages: [...(prev.passages || []), {
         id: Date.now().toString(),
-        dateExecution: prev.dateSaisie || "",
+        dateExecution: "",
         travauxRealises: "",
         tempsPasse: "",
         nomIntervenant: "Christophe Meyer",
