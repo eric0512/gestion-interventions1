@@ -950,14 +950,14 @@ export default function App() {
     return (
     <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
       <div ref={formTopRef} className="absolute -top-20" />
-      <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b-4 border-amber-500 shadow-md">
+      <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b border-white/5 shadow-md">
         <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
-          <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm transition-colors">← MENU</button>
+          <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm transition-colors">← MENU</button>
           <div>
             <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">
-              Saisie des bons
+              Saisie des <span className="text-[#daa520]">bons</span>
             </h1>
-            <p className="text-[10px] md:text-xs text-amber-500 font-black uppercase tracking-widest">Maintenance Control</p>
+            <p className="text-[10px] md:text-xs text-[#daa520]/80 font-black uppercase tracking-widest">Maintenance Control</p>
           </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
@@ -990,7 +990,7 @@ export default function App() {
              </>
            )}
            {!isArchived && (
-             <button onClick={() => handleSave()} className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-400 active:scale-95 text-black px-6 py-2 rounded font-black uppercase tracking-tight shadow-xl shadow-amber-500/20 transition-all border-b-4 border-amber-700 hover:border-amber-600 active:border-b-0">Sauvegarder</button>
+             <button onClick={() => handleSave()} className="flex-1 sm:flex-none bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black px-6 py-2 rounded font-black uppercase tracking-tight shadow-xl shadow-amber-500/20 transition-all">Sauvegarder</button>
            )}
         </div>
         {formData.numeroBon && (
@@ -1016,7 +1016,7 @@ export default function App() {
             onClick={() => setCollapsedSections(prev => ({ ...prev, admin: !prev.admin }))}
             className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
           >
-            <h3 className="text-xs font-black text-amber-500 uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
               <FileText size={16} /> Données Administratives
             </h3>
             {collapsedSections.admin ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
@@ -1380,14 +1380,14 @@ export default function App() {
     
     return (
       <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
-        <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b-4 border-amber-500 shadow-md">
+        <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b border-white/5 shadow-md">
           <div className="flex justify-between items-center">
             <div>
-              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm mb-1 transition-colors block">← MENU</button>
-              <h1 className="text-2xl font-black uppercase tracking-tighter">Consultation</h1>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <h1 className="text-2xl font-black uppercase tracking-tighter">Consultation des <span className="text-[#daa520]">bons</span></h1>
             </div>
             <div className="text-right">
-               <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest">Archive & Suivi</p>
+               <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Base de données</p>
             </div>
           </div>
         </header>
@@ -1398,7 +1398,7 @@ export default function App() {
         <div className="flex gap-2 mb-6 border-b border-slate-200 pb-4">
           <button 
             onClick={() => setConsultationTab('enCours')}
-            className={`px-4 py-2 rounded font-black text-xs uppercase tracking-widest transition-colors ${consultationTab === 'enCours' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`px-4 py-2 rounded font-black text-xs uppercase tracking-widest transition-colors ${consultationTab === 'enCours' ? 'bg-[#daa520] text-black shadow-lg shadow-amber-500/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             Interventions en cours
           </button>
@@ -1485,14 +1485,14 @@ export default function App() {
 
     return (
       <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
-        <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b-4 border-amber-500 shadow-md">
+        <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b border-white/5 shadow-md">
           <div className="flex justify-between items-center">
             <div>
-              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm mb-1 transition-colors block">← MENU</button>
-              <h1 className="text-2xl font-black uppercase tracking-tighter">Recherche</h1>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <h1 className="text-2xl font-black uppercase tracking-tighter">Recherche de <span className="text-[#daa520]">bons</span></h1>
             </div>
             <div className="text-right">
-               <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest">Base de données</p>
+               <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Base de données</p>
             </div>
           </div>
         </header>
@@ -1604,14 +1604,14 @@ export default function App() {
 
     return (
       <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
-        <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b-4 border-amber-500 shadow-md">
+        <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b border-white/5 shadow-md">
           <div className="flex justify-between items-center">
             <div>
-              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-amber-500 font-bold text-sm mb-1 transition-colors block">← MENU</button>
-              <h1 className="text-2xl font-black uppercase tracking-tighter">Statistiques</h1>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <h1 className="text-2xl font-black uppercase tracking-tighter">Tableau de <span className="text-[#daa520]">bord</span></h1>
             </div>
             <div className="text-right">
-               <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest">Reporting Analytique</p>
+               <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Reporting Analytique</p>
             </div>
           </div>
         </header>
