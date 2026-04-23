@@ -284,12 +284,13 @@ export default function App() {
         if (!data.demandeur) missing.push("Demandeur");
         if (!data.lieu) missing.push("Lieu");
         if (!data.demande) missing.push("Demande (Titre)");
+        if (!passage?.dateExecution) missing.push("Date d'intervention");
         if (!passage?.tempsPasse) missing.push("Temps passé");
         return missing;
       };
 
       // Logique de clôture automatique pour "Terminé"
-      const isTerminated = (field === 'raisonNouveauPassage' && value === 'Terminé' && currentPassage?.dateExecution) ||
+      const isTerminated = (field === 'raisonNouveauPassage' && value === 'Terminé') ||
                           (field === 'dateExecution' && value && currentPassage?.raisonNouveauPassage === 'Terminé');
 
       if (isTerminated) {
