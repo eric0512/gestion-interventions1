@@ -176,10 +176,17 @@ export default function App() {
       if (error) throw error;
       
       if (data) {
-        setInterventions(data.map((i: any) => ({
-          ...i,
-          archived: i.archived === undefined ? false : i.archived
-        })));
+        setInterventions(data.map((i: any) => {
+          // Si la colonne 'archived' n'existe pas en base, on la calcule à partir des passages
+          const hasClosingState = i.passages?.some((p: any) => 
+            p.raisonNouveauPassage === 'Terminé' || 
+            p.raisonNouveauPassage === "Intervention d'une autre entreprise nécessaire"
+          );
+          return {
+            ...i,
+            archived: i.archived ?? hasClosingState ?? false
+          };
+        }));
       }
       setSyncStatus('synced');
     } catch (err) {
@@ -237,9 +244,13 @@ export default function App() {
     
     setSyncStatus('syncing');
     try {
+      // On retire 'archived' de l'objet envoyé à Supabase car la colonne n'existe pas
+      // L'état archivé sera recalculé au chargement via le contenu des passages
+      const { archived, ...dataToSync } = item;
+      
       const { error } = await supabase
         .from('interventions')
-        .upsert(item);
+        .upsert(dataToSync);
       
       if (error) {
         console.error("Erreur Supabase:", error);
