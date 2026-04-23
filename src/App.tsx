@@ -15,7 +15,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
-import { Trash2, Cloud, CloudOff, RefreshCw, Camera, FileText, Loader2, X, ChevronDown, ChevronUp, User, MapPin, Settings } from 'lucide-react';
+import { Trash2, Cloud, CloudOff, RefreshCw, Camera, FileText, Loader2, X, ChevronDown, ChevronUp, User, MapPin, Settings, ClipboardEdit, ChevronRight } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import SignatureCanvas from 'react-signature-canvas';
 import { supabase } from './supabaseClient';
@@ -851,9 +851,17 @@ export default function App() {
       <div className="space-y-6 pb-2">
         <button 
           onClick={() => handleOpenSaisie()} 
-          className="w-full text-left px-6 py-5 bg-amber-400 text-black font-black rounded-xl flex items-center justify-between border-2 border-amber-500 shadow-[0_6px_0_0_#d97706] hover:bg-amber-300 hover:shadow-[0_4px_0_0_#d97706] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#d97706] active:translate-y-[6px] transition-all duration-150 uppercase tracking-tight"
+          className="w-full bg-gradient-to-r from-[#b8860b] via-[#ffd700] to-[#daa520] text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:brightness-105 transition-all group border border-amber-400/30"
         >
-          Saisie des bons d'interventions <span className="text-2xl">→</span>
+          <div className="flex items-center gap-4 px-6 py-4 w-full">
+            <div className="bg-black/5 p-2 rounded-lg">
+              <ClipboardEdit size={40} strokeWidth={1.2} className="text-black/80" />
+            </div>
+            <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
+              Saisie des bons d'interventions
+            </span>
+            <ChevronRight size={32} className="text-white drop-shadow-md" strokeWidth={3} />
+          </div>
         </button>
         <button 
           onClick={() => setView('consultation')} 
