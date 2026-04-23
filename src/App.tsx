@@ -354,14 +354,26 @@ export default function App() {
       const dataToValidate = actualData || formData;
       console.log("Starting handleSave with data:", dataToValidate);
       
-      // Validation: Si une date d'intervention est saisie, la raison devient obligatoire
-      const hasIncompletePassage = dataToValidate.passages?.some((p: any) => 
-        p.dateExecution && !p.raisonNouveauPassage
-      );
-
-      if (hasIncompletePassage) {
-        alert("Veuillez sélectionner un 'État / Suite de l'intervention' pour chaque passage daté.");
-        return;
+      // Validation: Si un champ du passage est saisi, la date, le temps et l'état deviennent obligatoires
+      const passages = dataToValidate.passages || [];
+      for (let i = 0; i < passages.length; i++) {
+        const p = passages[i];
+        const isTouched = p.dateExecution || p.tempsPasse || p.travauxRealises || p.raisonNouveauPassage;
+        
+        if (isTouched) {
+          if (!p.dateExecution) {
+            alert(`Passage #${i+1} : Veuillez renseigner la 'Date d'intervention'.`);
+            return;
+          }
+          if (!p.tempsPasse) {
+            alert(`Passage #${i+1} : Veuillez renseigner le 'Temps passé'.`);
+            return;
+          }
+          if (!p.raisonNouveauPassage) {
+            alert(`Passage #${i+1} : Veuillez sélectionner un 'État / Suite de l'intervention'.`);
+            return;
+          }
+        }
       }
 
       let dataToSave = { ...dataToValidate };
@@ -1105,7 +1117,9 @@ export default function App() {
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-300 uppercase">Date d'intervention</label>
+                      <label className="block text-[10px] font-bold text-slate-300 uppercase">
+                        Date d'intervention {(passage.tempsPasse || passage.travauxRealises || passage.raisonNouveauPassage) && <span className="text-red-500">*</span>}
+                      </label>
                       <input 
                         type="date" 
                         value={passage.dateExecution} 
@@ -1113,11 +1127,13 @@ export default function App() {
                         min={formData.dateSaisie} 
                         onChange={(e) => handlePassageChange(passage.id, 'dateExecution', e.target.value)} 
                         onFocus={() => { if (!passage.dateExecution && formData.dateSaisie) handlePassageChange(passage.id, 'dateExecution', formData.dateSaisie) }} 
-                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white disabled:opacity-75" 
+                        className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white disabled:opacity-75 ${(passage.tempsPasse || passage.travauxRealises || passage.raisonNouveauPassage) && !passage.dateExecution ? 'border-red-500 bg-red-50' : 'border-slate-300'}`} 
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-300 uppercase">Temps passé</label>
+                      <label className="block text-[10px] font-bold text-slate-300 uppercase">
+                        Temps passé {(passage.dateExecution || passage.travauxRealises || passage.raisonNouveauPassage) && <span className="text-red-500">*</span>}
+                      </label>
                       <input 
                         list="temps-passe-list" 
                         value={passage.tempsPasse} 
@@ -1125,7 +1141,7 @@ export default function App() {
                         onChange={(e) => handlePassageChange(passage.id, 'tempsPasse', e.target.value)} 
                         type="text" 
                         placeholder="ex: 02h30" 
-                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold disabled:opacity-75" 
+                        className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold disabled:opacity-75 ${(passage.dateExecution || passage.travauxRealises || passage.raisonNouveauPassage) && !passage.tempsPasse ? 'border-red-500 bg-red-50' : 'border-slate-300'}`} 
                       />
                     </div>
                   </div>
@@ -1156,12 +1172,12 @@ export default function App() {
                   <div className="pt-4 border-t border-slate-200 space-y-4">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">
-                        État / Suite de l'intervention {passage.dateExecution && <span className="text-red-500">*</span>}
+                        État / Suite de l'intervention {(passage.dateExecution || passage.tempsPasse || passage.travauxRealises) && <span className="text-red-500">*</span>}
                       </label>
                       <select 
                         value={passage.raisonNouveauPassage || ""} 
                         onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)} 
-                        className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold ${passage.dateExecution && !passage.raisonNouveauPassage ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
+                        className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold ${(passage.dateExecution || passage.tempsPasse || passage.travauxRealises) && !passage.raisonNouveauPassage ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
                       >
                         <option value="">Sélectionner l'état</option>
                         {[
