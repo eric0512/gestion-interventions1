@@ -320,7 +320,21 @@ export default function App() {
 
       // Logique pour "Autre passage nécessaire"
       if (field === 'raisonNouveauPassage' && value === "Autre passage nécessaire") {
-        shouldAddPassage = true;
+        if (window.confirm("Souhaitez-vous créer un nouveau bon pour cette intervention ?")) {
+          // On sauvegarde d'abord le bon actuel pour enregistrer l'état "Autre passage nécessaire"
+          const currentData = {
+            ...prev,
+            passages: newPassages
+          };
+          
+          setTimeout(() => {
+            handleSave(currentData); // Sauvegarde et retour menu
+            handleDuplicateBon(currentData); // Duplique et ouvre le nouveau
+          }, 100);
+          return currentData;
+        } else {
+          shouldAddPassage = true;
+        }
       }
 
       const nextData = {
@@ -340,6 +354,59 @@ export default function App() {
       }
 
       return nextData;
+    });
+  };
+
+  const handleDuplicateBon = (sourceData: any) => {
+    // Calcul du nouveau numéro de bon
+    let originalNumber = sourceData.numeroBon || "";
+    let newNumber = originalNumber;
+    
+    if (originalNumber) {
+      const parts = originalNumber.split('.');
+      if (parts.length > 1) {
+        const lastPart = parseInt(parts[parts.length - 1]);
+        if (!isNaN(lastPart)) {
+          parts[parts.length - 1] = (lastPart + 1).toString();
+          newNumber = parts.join('.');
+        } else {
+          newNumber = originalNumber + ".2";
+        }
+      } else {
+        newNumber = originalNumber + ".2";
+      }
+    }
+
+    const newData = {
+      ...sourceData,
+      id: Date.now().toString(),
+      numeroBon: newNumber,
+      dateSaisie: getTodayFormatted(),
+      archived: false,
+      urlDevis: null,
+      passages: [{
+        id: (Date.now() + 1).toString(),
+        dateExecution: "",
+        travauxRealises: "",
+        tempsPasse: "",
+        nomIntervenant: "Christophe Meyer",
+        nouveauPassageRequis: false,
+        raisonNouveauPassage: "",
+        autreRaison: ""
+      }]
+    };
+
+    // On réinitialise l'ID courant pour créer un nouveau record
+    setCurrentId(null);
+    setFormData(newData);
+    setView('saisie');
+    
+    // On force l'ouverture des sections pour une nouvelle saisie
+    setCollapsedSections({
+      admin: false,
+      demandeur: false,
+      localisation: false,
+      details: false
     });
   };
 
