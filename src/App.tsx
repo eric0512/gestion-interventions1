@@ -882,6 +882,13 @@ export default function App() {
              <button onClick={() => handleSave()} className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-400 active:scale-95 text-black px-6 py-2 rounded font-black uppercase tracking-tight shadow-xl shadow-amber-500/20 transition-all border-b-4 border-amber-700 hover:border-amber-600 active:border-b-0">Sauvegarder</button>
            )}
         </div>
+        {formData.numeroBon && (
+          <div className="w-full text-center sm:text-right mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
+            <span className="text-[10px] md:text-xs font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+              N° de bon : {formData.numeroBon}
+            </span>
+          </div>
+        )}
       </header>
       
       {extractionError && (
