@@ -1159,7 +1159,7 @@ export default function App() {
                         État / Suite de l'intervention {passage.dateExecution && <span className="text-red-500">*</span>}
                       </label>
                       <select 
-                        value={passage.raisonNouveauPassage} 
+                        value={passage.raisonNouveauPassage || ""} 
                         onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)} 
                         className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold ${passage.dateExecution && !passage.raisonNouveauPassage ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
                       >
