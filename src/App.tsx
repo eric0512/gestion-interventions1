@@ -241,12 +241,20 @@ export default function App() {
         .from('interventions')
         .upsert(item);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erreur Supabase:", error);
+        alert(`Erreur de synchronisation : ${error.message}\nCode: ${error.code}`);
+        throw error;
+      }
       console.log(`[Sync] Succès pour ${item.id} (archivé: ${item.archived})`);
       setSyncStatus('synced');
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erreur de sauvegarde Supabase:", err);
       setSyncStatus('error');
+      // On ne bloque pas l'utilisateur s'il est hors-ligne, mais on le prévient
+      if (!window.navigator.onLine) {
+        alert("Vous êtes hors-ligne. L'intervention est sauvegardée localement mais ne sera synchronisée qu'une fois la connexion rétablie.");
+      }
     }
   };
 
@@ -374,7 +382,7 @@ export default function App() {
     }));
   };
 
-  const handleSave = (dataOverride: any = null) => {
+  const handleSave = async (dataOverride: any = null) => {
     try {
       // Éviter de traiter l'objet événement comme des données si appelé via onClick={handleSave}
       const actualData = (dataOverride && dataOverride.nativeEvent) ? null : dataOverride;
@@ -431,7 +439,9 @@ export default function App() {
       
       if (!currentId) setCurrentId(newId);
 
-      syncIntervention(itemToSync);
+      // On attend la fin de la synchronisation avant de quitter
+      await syncIntervention(itemToSync);
+      
       setView('menu');
       console.log("Save successful, returning to menu");
     } catch (error) {
