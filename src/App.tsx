@@ -1334,7 +1334,9 @@ export default function App() {
           </div>
         </header>
         <div className="p-8">
-        
+        <p className="text-[10px] text-white/60 font-bold mb-2 italic uppercase tracking-wider">
+          Les interventions archivées ne sont plus modifiables
+        </p>
         <div className="flex gap-2 mb-6 border-b border-slate-200 pb-4">
           <button 
             onClick={() => setConsultationTab('enCours')}
