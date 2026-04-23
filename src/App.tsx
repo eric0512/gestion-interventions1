@@ -828,23 +828,26 @@ export default function App() {
 
   const renderMenu = () => (
     <div className="w-full max-w-lg bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg overflow-hidden">
-      <div className="bg-[#1B263B] p-6 border-b-4 border-amber-500">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Maintenance <span className="text-amber-500">Colmar</span></h1>
-          <div className="flex items-center gap-2">
-            {syncStatus === 'synced' && (
-              <button onClick={fetchInterventions} title="Synchronisé - Cliquez pour rafraîchir">
-                <Cloud size={20} className="text-emerald-400 hover:text-emerald-300 transition-colors" />
-              </button>
-            )}
-            {syncStatus === 'syncing' && <RefreshCw size={20} className="text-amber-500 animate-spin" title="Synchronisation..." />}
-            {syncStatus === 'error' && (
-              <button onClick={fetchInterventions} title="Erreur - Cliquez pour réessayer">
-                <CloudOff size={20} className="text-red-400 hover:text-red-300 transition-colors" />
-              </button>
-            )}
-            {syncStatus === 'offline' && <CloudOff size={20} className="text-slate-400" title="Mode hors-ligne" />}
-          </div>
+      <div className="bg-[#1B263B] p-5 border-b border-white/5">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={fetchInterventions} 
+            className="relative flex-shrink-0 group transition-transform active:scale-95"
+            title="Rafraîchir les données"
+          >
+            <Settings size={36} className="text-[#daa520] opacity-90 group-hover:opacity-100" strokeWidth={1.5} />
+            <div className="absolute inset-0 flex items-center justify-center pt-0.5">
+              {syncStatus === 'synced' && <Cloud size={16} className="text-[#daa520]" />}
+              {syncStatus === 'syncing' && <RefreshCw size={16} className="text-amber-400 animate-spin" />}
+              {syncStatus === 'error' && <CloudOff size={16} className="text-red-500" />}
+              {syncStatus === 'offline' && <CloudOff size={16} className="text-slate-500" />}
+            </div>
+          </button>
+          
+          <h1 className="text-xl font-black tracking-widest flex items-center gap-2">
+            <span className="text-white uppercase">Maintenance</span>
+            <span className="text-[#daa520] uppercase">Colmar</span>
+          </h1>
         </div>
       </div>
       <div className="p-8">
