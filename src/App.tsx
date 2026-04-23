@@ -277,22 +277,44 @@ export default function App() {
       let shouldTriggerSave = false;
       let shouldAddPassage = false;
 
+      // Helper de validation pour l'archivage
+      const getMissingFields = (data: any, passage: any) => {
+        const missing = [];
+        if (!data.numeroBon) missing.push("N° de bon");
+        if (!data.demandeur) missing.push("Demandeur");
+        if (!data.lieu) missing.push("Lieu");
+        if (!data.demande) missing.push("Demande (Titre)");
+        if (!passage?.tempsPasse) missing.push("Temps passé");
+        if (!passage?.travauxRealises) missing.push("Travaux réalisés");
+        return missing;
+      };
+
       // Logique de clôture automatique pour "Terminé"
       const isTerminated = (field === 'raisonNouveauPassage' && value === 'Terminé' && currentPassage?.dateExecution) ||
                           (field === 'dateExecution' && value && currentPassage?.raisonNouveauPassage === 'Terminé');
 
       if (isTerminated) {
-        if (window.confirm("Voulez-vous clôturer cette intervention ?")) {
-          nextArchived = true;
-          shouldTriggerSave = true;
+        const missing = getMissingFields(prev, currentPassage);
+        if (missing.length > 0) {
+          alert("Champs obligatoires manquants pour la clôture :\n- " + missing.join("\n- "));
+        } else {
+          if (window.confirm("Voulez-vous clôturer cette intervention ?")) {
+            nextArchived = true;
+            shouldTriggerSave = true;
+          }
         }
       }
 
       // Logique pour "Intervention d'une autre entreprise nécessaire"
       if (field === 'raisonNouveauPassage' && value === "Intervention d'une autre entreprise nécessaire") {
-        if (window.confirm("Considérez-vous cette intervention comme terminée ? Si oui, archiver")) {
-          nextArchived = true;
-          shouldTriggerSave = true;
+        const missing = getMissingFields(prev, currentPassage);
+        if (missing.length > 0) {
+          alert("Champs obligatoires manquants pour l'archivage :\n- " + missing.join("\n- "));
+        } else {
+          if (window.confirm("Considérez-vous cette intervention comme terminée ? Si oui, archiver")) {
+            nextArchived = true;
+            shouldTriggerSave = true;
+          }
         }
       }
 
