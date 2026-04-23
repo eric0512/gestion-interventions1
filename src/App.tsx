@@ -285,7 +285,6 @@ export default function App() {
         if (!data.lieu) missing.push("Lieu");
         if (!data.demande) missing.push("Demande (Titre)");
         if (!passage?.tempsPasse) missing.push("Temps passé");
-        if (!passage?.travauxRealises) missing.push("Travaux réalisés");
         return missing;
       };
 
