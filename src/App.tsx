@@ -1211,27 +1211,15 @@ export default function App() {
                         <option value="">Sélectionner l'état</option>
                         {[
                           "Autre passage nécessaire",
-                          "Autre...",
                           "Demande de devis",
                           "Intervention d'une autre entreprise nécessaire",
                           "Pièce(s) manquante(s)",
                           "Terminé"
                         ].sort((a, b) => a.localeCompare(b, 'fr')).map(opt => (
-                          <option key={opt} value={opt === "Autre..." ? "Autre" : opt}>{opt}</option>
+                          <option key={opt} value={opt}>{opt}</option>
                         ))}
                       </select>
                     </div>
-                    {passage.raisonNouveauPassage === 'Autre' && (
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-300 uppercase">Précisez la raison</label>
-                        <input 
-                          type="text" 
-                          value={passage.autreRaison} 
-                          onChange={(e) => handlePassageChange(passage.id, 'autreRaison', e.target.value)} 
-                          className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-1 focus:ring-amber-500 outline-none bg-white text-slate-900" 
-                        />
-                      </div>
-                    )}
                   </div>
 
                 </div>
