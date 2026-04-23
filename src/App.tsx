@@ -117,7 +117,7 @@ export default function App() {
         tempsPasse: "",
         nomIntervenant: "Christophe Meyer",
         nouveauPassageRequis: false,
-        raisonNouveauPassage: "Demande de devis",
+        raisonNouveauPassage: "",
         autreRaison: ""
       }]
     };
@@ -275,16 +275,30 @@ export default function App() {
       
       let nextArchived = prev.archived;
       let shouldTriggerSave = false;
+      let shouldAddPassage = false;
 
-      // Logique de clôture automatique
+      // Logique de clôture automatique pour "Terminé"
       const isTerminated = (field === 'raisonNouveauPassage' && value === 'Terminé' && currentPassage?.dateExecution) ||
                           (field === 'dateExecution' && value && currentPassage?.raisonNouveauPassage === 'Terminé');
 
       if (isTerminated) {
-        if (window.confirm("Voulez vous cloturer cette intervention?")) {
+        if (window.confirm("Voulez-vous clôturer cette intervention ?")) {
           nextArchived = true;
           shouldTriggerSave = true;
         }
+      }
+
+      // Logique pour "Intervention d'une autre entreprise nécessaire"
+      if (field === 'raisonNouveauPassage' && value === "Intervention d'une autre entreprise nécessaire") {
+        if (window.confirm("Considérez-vous cette intervention comme terminée ? Si oui, archiver")) {
+          nextArchived = true;
+          shouldTriggerSave = true;
+        }
+      }
+
+      // Logique pour "Autre passage nécessaire"
+      if (field === 'raisonNouveauPassage' && value === "Autre passage nécessaire") {
+        shouldAddPassage = true;
       }
 
       const nextData = {
@@ -296,6 +310,11 @@ export default function App() {
       if (shouldTriggerSave) {
         // On sauvegarde immédiatement après la mise à jour de l'état
         setTimeout(() => handleSave(nextData), 100);
+      }
+
+      if (shouldAddPassage) {
+        // On ajoute un passage après un court délai pour laisser l'état se mettre à jour
+        setTimeout(() => addPassage(), 100);
       }
 
       return nextData;
@@ -313,7 +332,7 @@ export default function App() {
         tempsPasse: "",
         nomIntervenant: "Christophe Meyer",
         nouveauPassageRequis: false,
-        raisonNouveauPassage: "Demande de devis",
+        raisonNouveauPassage: "",
         autreRaison: ""
       }]
     }));
@@ -341,7 +360,7 @@ export default function App() {
       );
 
       if (hasIncompletePassage) {
-        alert("Veuillez renseigner la 'Raison de ce nouveau passage' pour toutes les interventions datées.");
+        alert("Veuillez sélectionner un 'État / Suite de l'intervention' pour chaque passage daté.");
         return;
       }
 
@@ -706,7 +725,7 @@ export default function App() {
           tempsPasse: finalData.tempsPasse || "",
           nomIntervenant: finalData.nomIntervenant || "Christophe Meyer",
           nouveauPassageRequis: false,
-          raisonNouveauPassage: "Demande de devis",
+          raisonNouveauPassage: "",
           autreRaison: ""
         }];
       }
@@ -733,7 +752,7 @@ export default function App() {
           tempsPasse: "",
           nomIntervenant: "Christophe Meyer",
           nouveauPassageRequis: false,
-          raisonNouveauPassage: "Demande de devis",
+          raisonNouveauPassage: "",
           autreRaison: ""
         }]
       });
@@ -1070,11 +1089,6 @@ export default function App() {
           <section ref={passagesRef} className="border-t border-slate-200 pt-8 mt-8 scroll-mt-32">
             <div className="flex justify-between items-center border-b-2 border-amber-500 pb-1 mb-3">
               <h3 className="text-xs font-black text-white uppercase tracking-wider">Retour de fiche / Passages</h3>
-              {formData.passages && formData.passages.length > 0 && !isArchived && (
-                 <button type="button" onClick={addPassage} className="text-xs font-black text-amber-600 hover:text-amber-700 uppercase tracking-tighter">
-                   + Ajouter un passage
-                 </button>
-              )}
             </div>
             
             <div className="space-y-6">
@@ -1150,12 +1164,16 @@ export default function App() {
                         className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white font-bold ${passage.dateExecution && !passage.raisonNouveauPassage ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
                       >
                         <option value="">-- Sélectionner l'état --</option>
-                        <option value="Terminé">Terminé</option>
-                        <option value="Demande de devis">Demande de devis</option>
-                        <option value="Pièce(s) manquante(s)">Pièce(s) manquante(s)</option>
-                        <option value="Manque de temps">Manque de temps</option>
-                        <option value="Intervention d'une autre entreprise nécessaire">Intervention d'une autre entreprise nécessaire</option>
-                        <option value="Autre">Autre...</option>
+                        {[
+                          "Autre passage nécessaire",
+                          "Autre...",
+                          "Demande de devis",
+                          "Intervention d'une autre entreprise nécessaire",
+                          "Pièce(s) manquante(s)",
+                          "Terminé"
+                        ].sort((a, b) => a.localeCompare(b, 'fr')).map(opt => (
+                          <option key={opt} value={opt === "Autre..." ? "Autre" : opt}>{opt}</option>
+                        ))}
                       </select>
                     </div>
                     {passage.raisonNouveauPassage === 'Autre' && (
