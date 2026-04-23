@@ -1621,21 +1621,31 @@ export default function App() {
         </div>
 
         <div className="mb-6 bg-amber-500 p-4 rounded-lg shadow-lg border-l-8 border-amber-600 text-center">
-          <h2 className="text-xl font-black text-black uppercase tracking-tighter">
-            {statsFilter === 'year' && `TOTAL ${statsYear} : ${filtered.length}`}
-            {statsFilter === 'month' && `TOTAL ${new Date(2000, parseInt(statsMonth)-1).toLocaleString('fr-FR', { month: 'long' })} ${statsYear} : ${filtered.length}`}
-            {statsFilter === 'range' && (() => {
-              if (!statsStart || !statsEnd) return `TOTAL DU ? AU ? : ${filtered.length}`;
-              const d1 = new Date(statsStart);
-              const d2 = new Date(statsEnd);
-              const monthNames = ["JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE"];
-              
-              if (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth()) {
-                return `TOTAL DU ${String(d1.getDate()).padStart(2, '0')} AU ${String(d2.getDate()).padStart(2, '0')} ${monthNames[d1.getMonth()]} ${d1.getFullYear()} : ${filtered.length}`;
-              }
-              return `TOTAL DU ${statsStart.split('-').reverse().join('/')} AU ${statsEnd.split('-').reverse().join('/')} : ${filtered.length}`;
-            })()}
-          </h2>
+          {(() => {
+            const grandTotalMinutes = filtered.reduce((acc: number, i: any) => {
+              const itemMinutes = (i.passages || []).reduce((pAcc: number, p: any) => pAcc + parseDuration(p.tempsPasse || ""), 0);
+              return acc + itemMinutes;
+            }, 0);
+            const totalDuration = formatDuration(grandTotalMinutes);
+            
+            return (
+              <h2 className="text-xl font-black text-black uppercase tracking-tighter">
+                {statsFilter === 'year' && `TOTAL ${statsYear} : ${filtered.length} (${totalDuration})`}
+                {statsFilter === 'month' && `TOTAL ${new Date(2000, parseInt(statsMonth)-1).toLocaleString('fr-FR', { month: 'long' })} ${statsYear} : ${filtered.length} (${totalDuration})`}
+                {statsFilter === 'range' && (() => {
+                  if (!statsStart || !statsEnd) return `TOTAL DU ? AU ? : ${filtered.length} (${totalDuration})`;
+                  const d1 = new Date(statsStart);
+                  const d2 = new Date(statsEnd);
+                  const monthNames = ["JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE"];
+                  
+                  if (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth()) {
+                    return `TOTAL DU ${String(d1.getDate()).padStart(2, '0')} AU ${String(d2.getDate()).padStart(2, '0')} ${monthNames[d1.getMonth()]} ${d1.getFullYear()} : ${filtered.length} (${totalDuration})`;
+                  }
+                  return `TOTAL DU ${statsStart.split('-').reverse().join('/')} AU ${statsEnd.split('-').reverse().join('/')} : ${filtered.length} (${totalDuration})`;
+                })()}
+              </h2>
+            );
+          })()}
         </div>
 
           <div className="overflow-x-auto bg-white rounded-xl shadow-xl">
