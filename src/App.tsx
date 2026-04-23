@@ -110,6 +110,7 @@ export default function App() {
       demande: "",
       description: "",
       atelier: "",
+      archived: false,
       passages: [{
         id: Date.now().toString(),
         dateExecution: "",
@@ -175,7 +176,10 @@ export default function App() {
       if (error) throw error;
       
       if (data) {
-        setInterventions(data);
+        setInterventions(data.map((i: any) => ({
+          ...i,
+          archived: i.archived === undefined ? false : i.archived
+        })));
       }
       setSyncStatus('synced');
     } catch (err) {
@@ -238,6 +242,7 @@ export default function App() {
         .upsert(item);
       
       if (error) throw error;
+      console.log(`[Sync] Succès pour ${item.id} (archivé: ${item.archived})`);
       setSyncStatus('synced');
     } catch (err) {
       console.error("Erreur de sauvegarde Supabase:", err);
@@ -407,7 +412,11 @@ export default function App() {
       }
 
       const newId = currentId || Date.now().toString();
-      const itemToSync = { ...dataToSave, id: newId };
+      const itemToSync = { 
+        ...dataToSave, 
+        id: newId,
+        archived: Boolean(dataToSave.archived)
+      };
 
       console.log("Item to save:", itemToSync);
 
@@ -779,6 +788,7 @@ export default function App() {
         demande: "",
         description: "",
         atelier: "",
+        archived: false,
         passages: [{
           id: Date.now().toString(),
           dateExecution: "",
