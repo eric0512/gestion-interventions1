@@ -15,7 +15,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import imageCompression from 'browser-image-compression';
-import { Trash2, Cloud, CloudOff, RefreshCw, Camera, FileText, Loader2, X, ChevronDown, ChevronUp, User, MapPin, Settings, ClipboardEdit, ChevronRight } from 'lucide-react';
+import { Trash2, Cloud, CloudOff, RefreshCw, Camera, FileText, Loader2, X, ChevronDown, ChevronUp, User, MapPin, Settings, ClipboardEdit, ChevronRight, ClipboardList, Database, BarChart3 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import SignatureCanvas from 'react-signature-canvas';
 import { supabase } from './supabaseClient';
@@ -865,10 +865,19 @@ export default function App() {
         </button>
         <button 
           onClick={() => setView('consultation')} 
-          className="w-full text-left px-6 py-5 bg-slate-800 text-white font-black rounded-xl flex items-center justify-between border-2 border-slate-900 shadow-[0_6px_0_0_#0f172a] hover:bg-slate-700 hover:shadow-[0_4px_0_0_#0f172a] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#0f172a] active:translate-y-[6px] transition-all duration-150 uppercase tracking-tight"
+          className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
         >
-          Consultation des interventions <span className="text-2xl">→</span>
+          <div className="flex items-center gap-4 px-6 py-4 w-full">
+            <div className="bg-black/5 p-2 rounded-lg">
+              <ClipboardList size={40} strokeWidth={1.2} className="text-black/80" />
+            </div>
+            <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
+              Consultation des interventions
+            </span>
+            <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
+          </div>
         </button>
+
         <button 
           onClick={() => {
             setSearchQuery("");
@@ -876,15 +885,53 @@ export default function App() {
             setSearchEndDate(getTodayFormatted());
             setView('recherche');
           }} 
-          className="w-full text-left px-6 py-5 bg-slate-100 text-slate-800 font-black rounded-xl flex items-center justify-between border-2 border-slate-300 shadow-[0_6px_0_0_#94a3b8] hover:bg-slate-200 hover:shadow-[0_4px_0_0_#94a3b8] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#94a3b8] active:translate-y-[6px] transition-all duration-150 uppercase tracking-tight"
+          className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
         >
-          Recherche d'intervention <span className="text-2xl">→</span>
+          <div className="flex items-center gap-4 px-6 py-4 w-full">
+            <div className="bg-black/5 p-2 rounded-lg">
+              <Database size={40} strokeWidth={1.2} className="text-black/80" />
+            </div>
+            <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
+              Recherche d'intervention
+            </span>
+            <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
+          </div>
         </button>
+
         <button 
           onClick={() => setView('stats')} 
-          className="w-full text-left px-6 py-5 bg-zinc-800 text-white font-black rounded-xl flex items-center justify-between border-2 border-zinc-900 shadow-[0_6px_0_0_#18181b] hover:bg-zinc-700 hover:shadow-[0_4px_0_0_#18181b] hover:translate-y-[2px] active:shadow-[0_0px_0_0_#18181b] active:translate-y-[6px] transition-all duration-150 uppercase tracking-tight"
+          className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
         >
-          Statistiques <span className="text-2xl">→</span>
+          <div className="flex items-center gap-4 px-6 py-4 w-full">
+            <div className="bg-black/5 p-2 rounded-lg">
+              <BarChart3 size={40} strokeWidth={1.2} className="text-black/80" />
+            </div>
+            <span className="text-left text-lg font-black uppercase tracking-tighter leading-tight mr-4">
+              Statistiques
+            </span>
+            
+            {/* Mini Dashboard Style as per image */}
+            <div className="flex-grow flex items-center justify-end gap-6 pr-4 border-l border-slate-200 pl-4 py-1">
+              <div className="hidden sm:block">
+                <p className="text-[8px] font-bold text-slate-500 uppercase mb-1">Statut de flotte</p>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="text-[8px] font-bold">OK</span></div>
+                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500"></div><span className="text-[8px] font-bold">ATTENTION</span></div>
+                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div><span className="text-[8px] font-bold">CRITICAL</span></div>
+                </div>
+              </div>
+              <div className="hidden md:block">
+                <p className="text-[8px] font-bold text-slate-500 uppercase mb-1">Dernières actions</p>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[7px] font-bold">Brief - approves</span>
+                  <span className="text-[7px] font-bold">Brief - news</span>
+                  <span className="text-[7px] font-bold">Brief - interventions</span>
+                </div>
+              </div>
+            </div>
+            
+            <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
+          </div>
         </button>
       </div>
       <div className="mt-8 pt-4 border-t border-slate-200 flex justify-center">
