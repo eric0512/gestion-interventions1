@@ -110,6 +110,7 @@ export default function App() {
       demande: "",
       description: "",
       atelier: "",
+      photo_url: "",
       archived: false,
       passages: [{
         id: Date.now().toString(),
@@ -469,6 +470,26 @@ export default function App() {
     return isNaN(hours) ? 0 : hours * 60;
   };
 
+  const uploadImage = async (file: File | Blob): Promise<string | null> => {
+    try {
+      const fileName = `photo_${Date.now()}.png`;
+      const { data, error } = await supabase.storage
+        .from('interventions-photos')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('interventions-photos')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (err) {
+      console.error("Erreur d'upload image:", err);
+      return null;
+    }
+  };
+
   const formatDuration = (min: number) => {
     const h = Math.floor(min / 60);
     const m = min % 60;
@@ -498,6 +519,13 @@ export default function App() {
       } catch (err) {
         console.warn("Échec de la compression, utilisation de l'image originale:", err);
       }
+
+      setExtractStep("Sauvegarde image...");
+      const photoUrl = await uploadImage(processedFile);
+      if (photoUrl) {
+        setFormData(prev => ({ ...prev, photo_url: photoUrl }));
+      }
+
 
       setExtractStep("Lecture intelligente...");
       const base64Data = await new Promise<string>((resolve, reject) => {
@@ -809,6 +837,7 @@ export default function App() {
         demande: "",
         description: "",
         atelier: "",
+        photo_url: "",
         archived: false,
         passages: [{
           id: Date.now().toString(),
@@ -1030,9 +1059,19 @@ export default function App() {
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-slate-300 uppercase">N° de bon</label>
-                <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
-              </div>
-            </div>
+                <div className="flex gap-2">
+                  <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} disabled={isArchived} type="text" className="flex-grow border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
+                  {formData.photo_url && (
+                    <button 
+                      type="button" 
+                      onClick={() => window.open(formData.photo_url, '_blank')}
+                      className="bg-[#daa520] hover:bg-[#ffb700] text-black text-[10px] font-black px-3 py-1.5 rounded uppercase flex items-center gap-1 transition-all shadow-sm"
+                    >
+                      <Camera size={14} /> Bons Photos
+                    </button>
+                  )}
+                </div>
+              </div></div>
           )}
         </div>
         <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
