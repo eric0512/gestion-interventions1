@@ -395,6 +395,8 @@ export default function App() {
         return missing;
       };
 
+      let finalPassages = newPassages;
+      
       // Logique de sauvegarde automatique sans confirmation pour le champ "État / Suite"
       if (field === 'raisonNouveauPassage' && value) {
         const isClosingState = value === 'Terminé' || value === "Intervention d'une autre entreprise nécessaire";
@@ -409,7 +411,18 @@ export default function App() {
             shouldTriggerSave = true;
           }
         } else if (value === "Autre passage nécessaire") {
-          shouldAddPassage = true;
+          // On ajoute le nouveau passage DIRECTEMENT dans finalPassages 
+          // pour qu'il soit présent dans l'objet nextData envoyé à la sauvegarde
+          finalPassages = [...newPassages, {
+            id: (Date.now() + 1).toString(),
+            dateExecution: "",
+            travauxRealises: "",
+            tempsPasse: "",
+            nomIntervenant: "Christophe Meyer",
+            nouveauPassageRequis: false,
+            raisonNouveauPassage: "",
+            autreRaison: ""
+          }];
           shouldTriggerSave = true;
         } else {
           // Pour tout autre état saisi, on sauvegarde automatiquement le brouillon
@@ -424,18 +437,13 @@ export default function App() {
 
       const nextData = {
         ...prev,
-        passages: newPassages,
+        passages: finalPassages,
         archived: nextArchived
       };
 
       if (shouldTriggerSave) {
-        // On sauvegarde immédiatement après la mise à jour de l'état
+        // On sauvegarde immédiatement l'objet contenant TOUTES les modifs (y compris le nouveau passage s'il y a lieu)
         setTimeout(() => handleSave(nextData), 100);
-      }
-
-      if (shouldAddPassage) {
-        // On ajoute un passage après un court délai pour laisser l'état se mettre à jour
-        setTimeout(() => addPassage(), 100);
       }
 
       return nextData;
