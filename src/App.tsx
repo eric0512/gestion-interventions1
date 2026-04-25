@@ -161,6 +161,14 @@ export default function App() {
   const passagesRef = useRef<HTMLDivElement>(null);
   const formTopRef = useRef<HTMLDivElement>(null);
 
+  // --- États pour la notification furtive ---
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
+
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
   // --- États pour la sécurité ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinInput, setPinInput] = useState("");
@@ -521,7 +529,7 @@ export default function App() {
       await syncIntervention(itemToSync);
       
       // L'utilisateur souhaite rester sur la page pour consulter
-      alert("Bon sauvegardé avec succès !");
+      showNotification("Sauvegarde automatique effectuée");
       console.log("Save successful, staying on page for consultation");
     } catch (error) {
       console.error("CRITICAL ERROR in handleSave:", error);
@@ -1966,6 +1974,32 @@ export default function App() {
         {view === 'recherche' && renderRecherche()}
         {view === 'stats' && renderStats()}
       </div>
+
+      {/* Notification Furtive (Toast) */}
+      {notification && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[9999] animate-fade-in-up">
+          <div className={`px-6 py-3 rounded-full shadow-2xl border flex items-center gap-3 backdrop-blur-md ${
+            notification.type === 'success' 
+              ? 'bg-emerald-500/90 border-emerald-400 text-white' 
+              : notification.type === 'error'
+              ? 'bg-red-500/90 border-red-400 text-white'
+              : 'bg-slate-800/90 border-slate-700 text-white'
+          }`}>
+            {notification.type === 'success' && <ShieldCheck className="w-5 h-5" />}
+            <span className="font-bold tracking-wide">{notification.message}</span>
+          </div>
+        </div>
+      )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translate(-50%, 20px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.3s ease-out forwards;
+        }
+      `}} />
     </div>
   );
 }
