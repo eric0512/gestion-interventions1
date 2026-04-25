@@ -1746,7 +1746,7 @@ export default function App() {
     const uniqueBons = Array.from(new Set(interventions.map((i: any) => i.numeroBon).filter(Boolean)));
     const isSearching = Boolean(searchQuery || searchStartDate || searchEndDate);
 
-    const filteredInterventions = (interventions || []).filter((i: any) => {
+    const filteredInterventions = (!searchQuery && !searchStartDate) ? [] : (interventions || []).filter((i: any) => {
       if (!i) return false;
       const matchBon = !searchQuery || (i.numeroBon && i.numeroBon.toLowerCase().includes(searchQuery.toLowerCase()));
       
