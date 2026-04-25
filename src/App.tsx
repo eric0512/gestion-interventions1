@@ -396,11 +396,15 @@ export default function App() {
 
     // LOGIQUE DE SAUVEGARDE CONTEXTUELLE
     if (isAiProcessed) {
-      // Scénario B : Saisie Assistée par IA -> Sauvegarde automatique sur complétion des champs obligatoires
+      // Scénario B : Saisie Assistée par IA -> Sauvegarde automatique UNIQUEMENT au moment où le bon devient complet
       const mandatoryFields = ['dateSaisie', 'dateDemande', 'numeroBon', 'lieu', 'demande'];
       if (mandatoryFields.includes(name) && value) {
-        const isComplete = mandatoryFields.every(f => nextData[f] && nextData[f].trim() !== "");
-        if (isComplete) {
+        // On vérifie si les AUTRES champs sont déjà remplis
+        const othersComplete = mandatoryFields.filter(f => f !== name).every(f => formData[f] && formData[f].trim() !== "");
+        // On ne déclenche la sauvegarde que si ce champ était VIDE avant (donc c'est le dernier rempli)
+        const wasEmpty = !formData[name] || formData[name].trim() === "";
+        
+        if (othersComplete && wasEmpty) {
           handleSave(nextData);
         }
       }
