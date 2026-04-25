@@ -1657,25 +1657,24 @@ export default function App() {
         <p className="text-[10px] text-white/60 font-bold mb-2 italic uppercase tracking-wider">
           Les interventions archivées ne sont plus modifiables
         </p>
-        <div className="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-4">
+        <div className="flex gap-2 mb-6 border-b border-slate-200 pb-4">
           <button 
             onClick={() => setConsultationTab('enCours')}
-            className={`px-4 py-2 rounded font-black text-xs uppercase tracking-widest transition-colors ${consultationTab === 'enCours' ? 'bg-[#daa520] text-black shadow-lg shadow-[#daa520]/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'enCours' ? 'bg-[#daa520] text-black shadow-lg shadow-[#daa520]/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
-            Interventions en cours
+            En cours
           </button>
           <button 
             onClick={() => setConsultationTab('archivees')}
-            className={`px-4 py-2 rounded font-black text-xs uppercase tracking-widest transition-colors ${consultationTab === 'archivees' ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'archivees' ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
-            Interventions archivées
+            Archivées
           </button>
-          
           <button 
             onClick={() => setShowLateModal(true)}
-            className="px-4 py-2 rounded font-black text-xs uppercase tracking-widest transition-all bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600 active:scale-95 flex items-center gap-2 ml-auto"
+            className="flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-all bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600 active:scale-95 flex items-center justify-center gap-1"
           >
-            <ShieldCheck size={14} /> Bons en retard
+            <ShieldCheck size={14} /> En retard
           </button>
         </div>
 
