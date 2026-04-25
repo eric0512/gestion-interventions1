@@ -238,6 +238,21 @@ export default function App() {
     }
   };
 
+  // --- États pour l'alerte des bons en retard ---
+  const [showLateModal, setShowLateModal] = useState(false);
+  const [hasShownLateModal, setHasShownLateModal] = useState(false);
+
+  useEffect(() => {
+    // On n'affiche le modal que si on est authentifié et que les interventions sont chargées
+    if (isAuthenticated && interventions.length > 0 && !hasShownLateModal) {
+      const lateOnes = interventions.filter((i: any) => !i.archived && isDateOlderThan30Days(i.dateDemande));
+      if (lateOnes.length > 0) {
+        setShowLateModal(true);
+        setHasShownLateModal(true);
+      }
+    }
+  }, [isAuthenticated, interventions, hasShownLateModal]);
+
   useEffect(() => {
     if (view === 'saisie') {
       // Un petit délai pour s'assurer que le DOM est prêt
@@ -1018,6 +1033,58 @@ export default function App() {
         >
           <ShieldCheck size={14} /> Sauvegarder
         </button>
+      </div>
+    );
+  };
+
+  const LateInterventionsModal = () => {
+    if (!showLateModal) return null;
+    
+    const lateOnes = interventions.filter((i: any) => !i.archived && isDateOlderThan30Days(i.dateDemande));
+    if (lateOnes.length === 0) return null;
+
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowLateModal(false)}></div>
+        <div className="bg-[#1B263B] w-full max-w-lg rounded-2xl border-2 border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.3)] overflow-hidden relative animate-fade-in-up">
+          <div className="bg-red-500 p-4 flex items-center gap-3 shadow-lg">
+            <ShieldCheck className="text-white w-6 h-6" />
+            <h2 className="text-white font-black uppercase tracking-tighter text-lg">Alertes : Bons en retard</h2>
+          </div>
+          <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <p className="text-slate-400 text-[10px] font-bold uppercase mb-4 tracking-widest opacity-70">Les interventions suivantes dépassent les 30 jours :</p>
+            <div className="space-y-3">
+              {lateOnes.map((i: any) => (
+                <div key={i.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex justify-between items-center hover:bg-white/10 transition-colors">
+                  <div>
+                    <button 
+                      onClick={() => {
+                        handleOpenSaisie(i);
+                        setShowLateModal(false);
+                      }}
+                      className="text-[#daa520] font-black text-sm hover:underline flex items-center gap-2"
+                    >
+                      {i.numeroBon ? `BON N°${i.numeroBon}` : "BON SANS N°"}
+                    </button>
+                  </div>
+                  <div className="text-right">
+                    <span className="bg-red-500/20 text-red-400 text-[10px] font-black px-2 py-1 rounded-full border border-red-500/30">
+                      +{getDaysElapsed(i.dateDemande)} JOURS
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="p-4 border-t border-white/5 bg-white/5 flex justify-end">
+            <button 
+              onClick={() => setShowLateModal(false)}
+              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-black uppercase rounded-lg transition-all"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
       </div>
     );
   };
@@ -2099,6 +2166,7 @@ export default function App() {
         }
       `}} />
       <FloatingSaveButton />
+      <LateInterventionsModal />
     </div>
   );
 }
