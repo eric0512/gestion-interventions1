@@ -81,7 +81,7 @@ export default function App() {
   const [view, setView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche' | 'stats'>(() => {
     return (sessionStorage.getItem('app_view') as any) || 'menu';
   });
-  const [consultationTab, setConsultationTab] = useState<'enCours' | 'archivees'>('enCours');
+  const [consultationTab, setConsultationTab] = useState<'enCours' | 'archivees' | 'enRetard'>('enCours');
   const [searchQuery, setSearchQuery] = useState("");
   const [searchStartDate, setSearchStartDate] = useState("");
   const [searchEndDate, setSearchEndDate] = useState(() => getTodayFormatted());
@@ -1636,9 +1636,13 @@ export default function App() {
   const renderConsultation = () => {
     if (!Array.isArray(interventions)) return <div className="text-white p-8">Erreur : Les données ne sont pas au bon format.</div>;
     
-    const displayedInterventions = (interventions || []).filter((i: any) => 
-      i && (consultationTab === 'enCours' ? !i.archived : i.archived)
-    );
+    const displayedInterventions = (interventions || []).filter((i: any) => {
+      if (!i) return false;
+      if (consultationTab === 'enCours') return !i.archived;
+      if (consultationTab === 'archivees') return i.archived;
+      if (consultationTab === 'enRetard') return !i.archived && isDateOlderThan30Days(i.dateDemande);
+      return true;
+    });
     
     return (
       <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
@@ -1671,8 +1675,8 @@ export default function App() {
             Archivées
           </button>
           <button 
-            onClick={() => setShowLateModal(true)}
-            className="flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-all bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600 active:scale-95 flex items-center justify-center gap-1"
+            onClick={() => setConsultationTab('enRetard')}
+            className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-all flex items-center justify-center gap-1 ${consultationTab === 'enRetard' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 scale-105 z-10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             <ShieldCheck size={14} /> En retard
           </button>
