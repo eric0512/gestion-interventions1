@@ -161,6 +161,11 @@ export default function App() {
   const passagesRef = useRef<HTMLDivElement>(null);
   const formTopRef = useRef<HTMLDivElement>(null);
 
+  // --- États pour la logique de sauvegarde contextuelle ---
+  const [isAiProcessed, setIsAiProcessed] = useState(false);
+  const [focusedElement, setFocusedElement] = useState<{ id: string, rect: DOMRect | null }>({ id: "", rect: null });
+  const [isHoveringFloatingSave, setIsHoveringFloatingSave] = useState(false);
+
   // --- États pour la notification furtive ---
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
 
@@ -374,12 +379,18 @@ export default function App() {
     const nextData = { ...formData, [name]: value };
     setFormData(nextData);
 
-    // Sauvegarde automatique si les champs obligatoires (Colmar le, Date demande, N° de bon) sont remplis
-    if ((name === 'dateSaisie' || name === 'dateDemande' || name === 'numeroBon') && value) {
-      if (nextData.dateSaisie && nextData.dateDemande && nextData.numeroBon) {
-        handleSave(nextData);
+    // LOGIQUE DE SAUVEGARDE CONTEXTUELLE
+    if (isAiProcessed) {
+      // Scénario B : Saisie Assistée par IA -> Sauvegarde automatique sur complétion des champs obligatoires
+      const mandatoryFields = ['dateSaisie', 'dateDemande', 'numeroBon', 'lieu', 'demande'];
+      if (mandatoryFields.includes(name) && value) {
+        const isComplete = mandatoryFields.every(f => nextData[f] && nextData[f].trim() !== "");
+        if (isComplete) {
+          handleSave(nextData);
+        }
       }
     }
+    // Note : En Scénario A (Manuel), on utilise uniquement le bouton flottant au focus.
   };
 
   const handlePassageChange = (id: string, field: string, value: any) => {
@@ -741,6 +752,7 @@ export default function App() {
               };
             }
             finalDataForSave = newData;
+            setIsAiProcessed(true); // Marquage comme traité par IA
             return newData;
           });
 
@@ -903,6 +915,8 @@ export default function App() {
   const handleOpenSaisie = (data: any = null) => {
     setExtractionError(null);
     setIsExtracting(false);
+    setIsAiProcessed(false); // Reset de l'état IA pour une nouvelle saisie ou modif manuelle
+    setFocusedElement({ id: "", rect: null });
     
     // Ignorer si c'est un objet événement
     if (data && data.nativeEvent) data = null;
@@ -965,6 +979,51 @@ export default function App() {
       setCurrentId(null);
     }
     setView('saisie');
+  };
+
+  const handleFieldFocus = (e: any) => {
+    if (isAiProcessed || formData.archived) return;
+    // On ne s'intéresse qu'aux inputs, textareas et selects
+    if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+    
+    const rect = e.target.getBoundingClientRect();
+    setFocusedElement({ id: e.target.name || e.target.id, rect });
+  };
+
+  const handleFieldBlur = () => {
+    setTimeout(() => {
+      if (!isHoveringFloatingSave) {
+        setFocusedElement({ id: "", rect: null });
+      }
+    }, 200);
+  };
+
+  const FloatingSaveButton = () => {
+    if (isAiProcessed || formData.archived || !focusedElement.id || !focusedElement.rect) return null;
+    
+    return (
+      <div 
+        className="fixed z-[1000] transition-all duration-300 ease-out pointer-events-auto"
+        style={{
+          left: focusedElement.rect.left + focusedElement.rect.width / 2,
+          top: focusedElement.rect.top - 40,
+          transform: 'translateX(-50%)'
+        }}
+        onMouseEnter={() => setIsHoveringFloatingSave(true)}
+        onMouseLeave={() => setIsHoveringFloatingSave(false)}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            handleSave();
+            setFocusedElement({ id: "", rect: null });
+          }}
+          className="bg-[#daa520] text-black px-4 py-2 rounded-full shadow-2xl border-2 border-black/20 font-black text-[10px] uppercase tracking-wider flex items-center gap-2 hover:bg-[#ffb700] hover:scale-110 active:scale-95 transition-all animate-fade-in-down"
+        >
+          <ShieldCheck size={14} /> Sauvegarder
+        </button>
+      </div>
+    );
   };
 
   const renderMenu = () => (
@@ -1119,9 +1178,6 @@ export default function App() {
                </div>
              </>
            )}
-           {!isArchived && (
-              <button onClick={() => handleSave()} className="flex-1 sm:flex-none bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black px-6 py-2 rounded font-black uppercase tracking-tight shadow-xl shadow-[#daa520]/20 transition-all">Sauvegarder</button>
-            )}
         </div>
         {formData.numeroBon && (
           <div className="w-full text-center sm:text-right mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
@@ -1139,7 +1195,11 @@ export default function App() {
         </div>
       )}
 
-      <form className="p-4 md:p-6 space-y-3">
+      <form 
+        className="p-4 md:p-6 space-y-3"
+        onFocusCapture={handleFieldFocus}
+        onBlurCapture={handleFieldBlur}
+      >
         <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
           <button 
             type="button"
@@ -2032,10 +2092,18 @@ export default function App() {
           from { opacity: 0; transform: translate(-50%, 20px); }
           to { opacity: 1; transform: translate(-50%, 0); }
         }
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translate(-50%, -10px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
         .animate-fade-in-up {
           animation: fadeInUp 0.3s ease-out forwards;
         }
+        .animate-fade-in-down {
+          animation: fadeInDown 0.2s ease-out forwards;
+        }
       `}} />
+      <FloatingSaveButton />
     </div>
   );
 }
