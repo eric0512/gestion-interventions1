@@ -991,11 +991,7 @@ export default function App() {
   };
 
   const handleFieldBlur = () => {
-    setTimeout(() => {
-      if (!isHoveringFloatingSave) {
-        setFocusedElement({ id: "", rect: null });
-      }
-    }, 200);
+    // Supprimé pour éviter que le bouton ne disparaisse trop vite
   };
 
   const FloatingSaveButton = () => {
@@ -1198,7 +1194,6 @@ export default function App() {
       <form 
         className="p-4 md:p-6 space-y-3"
         onFocusCapture={handleFieldFocus}
-        onBlurCapture={handleFieldBlur}
       >
         <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
           <button 
