@@ -374,9 +374,9 @@ export default function App() {
     const nextData = { ...formData, [name]: value };
     setFormData(nextData);
 
-    // Sauvegarde automatique si les champs obligatoires (Colmar le et Date demande) sont remplis
-    if ((name === 'dateSaisie' || name === 'dateDemande') && value) {
-      if (nextData.dateSaisie && nextData.dateDemande) {
+    // Sauvegarde automatique si les champs obligatoires (Colmar le, Date demande, N° de bon) sont remplis
+    if ((name === 'dateSaisie' || name === 'dateDemande' || name === 'numeroBon') && value) {
+      if (nextData.dateSaisie && nextData.dateDemande && nextData.numeroBon) {
         handleSave(nextData);
       }
     }
@@ -750,6 +750,7 @@ export default function App() {
               const missing = [];
               if (!finalDataForSave.dateSaisie) missing.push("'Colmar le'");
               if (!finalDataForSave.dateDemande) missing.push("'Date de demande'");
+              if (!finalDataForSave.numeroBon) missing.push("'N° de bon'");
               
               if (missing.length > 0) {
                 alert("L'analyse est terminée mais des champs obligatoires sont manquants : " + missing.join(", ") + ". Veuillez les compléter pour enregistrer.");
@@ -1155,7 +1156,7 @@ export default function App() {
                 <input name="dateSaisie" value={formData.dateSaisie} onChange={handleChange} disabled={isArchived} type="date" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">N° de bon</label>
+                <label className="block text-[10px] font-bold text-slate-300 uppercase">N° de bon <span className="text-red-500">*</span></label>
                 <div className="flex gap-2">
                   <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} disabled={isArchived} type="text" className="flex-grow border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
                   {formData.photo_url && (
