@@ -983,11 +983,11 @@ export default function App() {
 
   const handleFieldFocus = (e: any) => {
     if (isAiProcessed || formData.archived) return;
-    // On ne s'intéresse qu'aux inputs, textareas et selects
     if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
     
+    const fieldId = e.target.name || e.target.id;
     const rect = e.target.getBoundingClientRect();
-    setFocusedElement({ id: e.target.name || e.target.id, rect });
+    setFocusedElement({ id: fieldId, rect });
   };
 
   const handleFieldBlur = () => {
