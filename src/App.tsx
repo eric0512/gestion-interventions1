@@ -396,7 +396,6 @@ export default function App() {
       const getMissingFields = (data: any, passage: any) => {
         const missing = [];
         if (!data.numeroBon) missing.push("N° de bon");
-        if (!data.demandeur) missing.push("Demandeur");
         if (!data.lieu) missing.push("Lieu");
         if (!data.demande) missing.push("Demande (Titre)");
         if (!passage?.dateExecution) missing.push("Date d'intervention");
@@ -1185,7 +1184,7 @@ export default function App() {
             <div className="space-y-4 mb-4">
               <div>
                 <label className="block text-[10px] font-bold text-slate-300 uppercase">
-                  Demandeur <span className="text-red-500">*</span>
+                  Demandeur
                 </label>
                 <input 
                   name="demandeur" 
@@ -1193,7 +1192,7 @@ export default function App() {
                   onChange={handleChange} 
                   disabled={isArchived} 
                   type="text" 
-                  className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none font-bold disabled:opacity-75 ${!formData.demandeur ? 'border-[#daa520]/50 bg-[#daa520]/5' : 'border-slate-300 bg-white text-slate-900'}`} 
+                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" 
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
