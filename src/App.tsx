@@ -872,91 +872,6 @@ export default function App() {
     // Si c'est une modif, on les garde fermés par défaut pour plus de clarté
     const shouldCollapse = data ? true : false;
 
-  // --- Rendu de l'écran de verrouillage ---
-  if (isInitializingSecurity) {
-    return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-[#daa520] animate-spin" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-4 font-sans text-white">
-        <div className="w-full max-w-md bg-[#1e293b] rounded-2xl shadow-2xl border border-slate-700 p-8 flex flex-col items-center">
-          <div className="w-20 h-20 bg-[#daa520]/10 rounded-full flex items-center justify-center mb-6 border border-[#daa520]/30 shadow-[0_0_15px_rgba(218,165,32,0.2)]">
-            <Lock className="w-10 h-10 text-[#daa520]" />
-          </div>
-          
-          <h1 className="text-2xl font-bold mb-2 tracking-tight">Accès Sécurisé</h1>
-          <p className="text-slate-400 mb-8 text-center text-sm">Veuillez entrer votre code de protection pour accéder à l'application de gestion des interventions.</p>
-          
-          <div className="flex gap-3 mb-8">
-            {[...Array(6)].map((_, i) => (
-              <div 
-                key={i}
-                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
-                  pinInput.length > i 
-                    ? 'bg-[#daa520] border-[#daa520] scale-110 shadow-[0_0_8px_rgba(218,165,32,0.5)]' 
-                    : 'border-slate-600 bg-transparent'
-                } ${pinError ? 'bg-red-500 border-red-500 animate-shake' : ''}`}
-              />
-            ))}
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 w-full max-w-[280px]">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-              <button
-                key={num}
-                onClick={() => handleKeypadPress(num.toString())}
-                className="h-16 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-xl font-semibold transition-colors border border-slate-700 flex items-center justify-center"
-              >
-                {num}
-              </button>
-            ))}
-            <button 
-              onClick={() => setPinInput("")}
-              className="h-16 rounded-xl bg-slate-800/50 hover:bg-red-900/30 text-red-400 text-sm font-medium transition-colors border border-slate-700/50 flex items-center justify-center"
-            >
-              Effacer
-            </button>
-            <button
-              onClick={() => handleKeypadPress("0")}
-              className="h-16 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-xl font-semibold transition-colors border border-slate-700 flex items-center justify-center"
-            >
-              0
-            </button>
-            <button
-              onClick={() => handlePinSubmit()}
-              className="h-16 rounded-xl bg-[#daa520] hover:bg-[#b8860b] active:scale-95 text-slate-900 flex items-center justify-center transition-all shadow-lg"
-            >
-              <KeyRound className="w-6 h-6" />
-            </button>
-          </div>
-
-          <div className="mt-8 flex items-center gap-2 text-xs text-slate-500">
-            <ShieldCheck className="w-4 h-4 text-[#daa520]/60" />
-            <span>Système d'authentification matériel local</span>
-          </div>
-        </div>
-        
-        <p className="mt-8 text-slate-600 text-xs">Gestion des Interventions - Maintenance Industrielle</p>
-        
-        <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-          }
-          .animate-shake {
-            animation: shake 0.2s ease-in-out 0s 2;
-          }
-        `}} />
-      </div>
-    );
-  }
-    
     setCollapsedSections({
       admin: shouldCollapse,
       demandeur: shouldCollapse,
@@ -1962,6 +1877,91 @@ export default function App() {
       </div>
     );
   };
+
+  // --- Rendu de l'écran de verrouillage ---
+  if (isInitializingSecurity) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-[#daa520] animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-4 font-sans text-white">
+        <div className="w-full max-w-md bg-[#1e293b] rounded-2xl shadow-2xl border border-slate-700 p-8 flex flex-col items-center">
+          <div className="w-20 h-20 bg-[#daa520]/10 rounded-full flex items-center justify-center mb-6 border border-[#daa520]/30 shadow-[0_0_15px_rgba(218,165,32,0.2)]">
+            <Lock className="w-10 h-10 text-[#daa520]" />
+          </div>
+          
+          <h1 className="text-2xl font-bold mb-2 tracking-tight">Accès Sécurisé</h1>
+          <p className="text-slate-400 mb-8 text-center text-sm">Veuillez entrer votre code de protection pour accéder à l'application de gestion des interventions.</p>
+          
+          <div className="flex gap-3 mb-8">
+            {[...Array(6)].map((_, i) => (
+              <div 
+                key={i}
+                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+                  pinInput.length > i 
+                    ? 'bg-[#daa520] border-[#daa520] scale-110 shadow-[0_0_8px_rgba(218,165,32,0.5)]' 
+                    : 'border-slate-600 bg-transparent'
+                } ${pinError ? 'bg-red-500 border-red-500 animate-shake' : ''}`}
+              />
+            ))}
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 w-full max-w-[280px]">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+              <button
+                key={num}
+                onClick={() => handleKeypadPress(num.toString())}
+                className="h-16 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-xl font-semibold transition-colors border border-slate-700 flex items-center justify-center"
+              >
+                {num}
+              </button>
+            ))}
+            <button 
+              onClick={() => setPinInput("")}
+              className="h-16 rounded-xl bg-slate-800/50 hover:bg-red-900/30 text-red-400 text-sm font-medium transition-colors border border-slate-700/50 flex items-center justify-center"
+            >
+              Effacer
+            </button>
+            <button
+              onClick={() => handleKeypadPress("0")}
+              className="h-16 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-xl font-semibold transition-colors border border-slate-700 flex items-center justify-center"
+            >
+              0
+            </button>
+            <button
+              onClick={() => handlePinSubmit()}
+              className="h-16 rounded-xl bg-[#daa520] hover:bg-[#b8860b] active:scale-95 text-slate-900 flex items-center justify-center transition-all shadow-lg"
+            >
+              <KeyRound className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="mt-8 flex items-center gap-2 text-xs text-slate-500">
+            <ShieldCheck className="w-4 h-4 text-[#daa520]/60" />
+            <span>Système d'authentification matériel local</span>
+          </div>
+        </div>
+        
+        <p className="mt-8 text-slate-600 text-xs">Gestion des Interventions - Maintenance Industrielle</p>
+        
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+          }
+          .animate-shake {
+            animation: shake 0.2s ease-in-out 0s 2;
+          }
+        `}} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#415A77] p-6 font-sans text-slate-800">
