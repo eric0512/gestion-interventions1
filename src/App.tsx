@@ -387,38 +387,31 @@ export default function App() {
         return missing;
       };
 
-      // Logique de clôture automatique pour "Terminé"
-      const isTerminated = (field === 'raisonNouveauPassage' && value === 'Terminé') ||
-                          (field === 'dateExecution' && value && currentPassage?.raisonNouveauPassage === 'Terminé');
-
-      if (isTerminated) {
-        const missing = getMissingFields(prev, currentPassage);
-        if (missing.length > 0) {
-          alert("Champs obligatoires manquants pour la clôture :\n- " + missing.join("\n- "));
-        } else {
-          if (window.confirm("Voulez-vous clôturer cette intervention ?")) {
+      // Logique de sauvegarde automatique sans confirmation pour le champ "État / Suite"
+      if (field === 'raisonNouveauPassage' && value) {
+        const isClosingState = value === 'Terminé' || value === "Intervention d'une autre entreprise nécessaire";
+        
+        if (isClosingState) {
+          const missing = getMissingFields(prev, currentPassage);
+          if (missing.length > 0) {
+            alert("Champs obligatoires manquants pour la clôture :\n- " + missing.join("\n- "));
+          } else {
+            // Sauvegarde automatique et archivage
             nextArchived = true;
             shouldTriggerSave = true;
           }
-        }
-      }
-
-      // Logique pour "Intervention d'une autre entreprise nécessaire"
-      if (field === 'raisonNouveauPassage' && value === "Intervention d'une autre entreprise nécessaire") {
-        const missing = getMissingFields(prev, currentPassage);
-        if (missing.length > 0) {
-          alert("Champs obligatoires manquants pour l'archivage :\n- " + missing.join("\n- "));
+        } else if (value === "Autre passage nécessaire") {
+          shouldAddPassage = true;
+          shouldTriggerSave = true;
         } else {
-          if (window.confirm("Considérez-vous cette intervention comme terminée ? Si oui, archiver")) {
-            nextArchived = true;
-            shouldTriggerSave = true;
-          }
+          // Pour tout autre état saisi, on sauvegarde automatiquement le brouillon
+          shouldTriggerSave = true;
         }
       }
 
-      // Logique pour "Autre passage nécessaire"
-      if (field === 'raisonNouveauPassage' && value === "Autre passage nécessaire") {
-        shouldAddPassage = true;
+      // Cas particulier : Date d'exécution mise à jour alors que l'état est déjà "Terminé"
+      if (field === 'dateExecution' && value && currentPassage?.raisonNouveauPassage === 'Terminé') {
+        shouldTriggerSave = true;
       }
 
       const nextData = {
