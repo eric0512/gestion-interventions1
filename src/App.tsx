@@ -997,7 +997,7 @@ export default function App() {
   };
 
   const handleFieldFocus = (e: any) => {
-    if (isAiProcessed || formData.archived) return;
+    if (formData.archived) return;
     if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
     
     const fieldId = e.target.name || e.target.id;
@@ -1010,7 +1010,7 @@ export default function App() {
   };
 
   const FloatingSaveButton = () => {
-    if (isAiProcessed || formData.archived || !focusedElement.id || !focusedElement.rect) return null;
+    if (formData.archived || !focusedElement.id || !focusedElement.rect) return null;
     
     return (
       <div 
