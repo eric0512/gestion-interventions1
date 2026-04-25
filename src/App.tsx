@@ -1551,7 +1551,12 @@ export default function App() {
                     )}
                   </div>
                   {i.passages && i.passages.length > 1 ? (
-                    <div className="text-xs text-slate-500 font-normal mt-1">Intervenants : {i.passages.length} passages enregistrés</div>
+                    <div className="text-xs text-slate-500 font-normal mt-1">
+                      {i.passages.length} passages enregistrés — Total : {(() => {
+                        const totalMin = i.passages.reduce((acc: number, p: any) => acc + parseDuration(p.tempsPasse), 0);
+                        return formatDuration(totalMin);
+                      })()}
+                    </div>
                   ) : (i.nomIntervenant && (
                     <div className="text-xs text-slate-500 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
                   ))}
@@ -1682,7 +1687,12 @@ export default function App() {
                     )}
                   </div>
                   {i.passages && i.passages.length > 1 ? (
-                    <div className="text-xs text-slate-500 font-normal mt-1">Intervenants : {i.passages.length} passages enregistrés</div>
+                    <div className="text-xs text-slate-500 font-normal mt-1">
+                      {i.passages.length} passages enregistrés — Total : {(() => {
+                        const totalMin = i.passages.reduce((acc: number, p: any) => acc + parseDuration(p.tempsPasse), 0);
+                        return formatDuration(totalMin);
+                      })()}
+                    </div>
                   ) : (i.nomIntervenant && (
                     <div className="text-xs text-slate-500 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
                   ))}
