@@ -1046,7 +1046,7 @@ export default function App() {
     return (
       <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowLateModal(false)}></div>
-        <div className="bg-[#1B263B] w-full max-w-lg rounded-2xl border-2 border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.3)] overflow-hidden relative animate-fade-in-up">
+        <div className="bg-[#1B263B] w-full max-w-lg rounded-2xl border-2 border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.3)] overflow-hidden relative animate-modal-in">
           <div className="bg-red-500 p-4 flex items-center gap-3 shadow-lg">
             <ShieldCheck className="text-white w-6 h-6" />
             <h2 className="text-white font-black uppercase tracking-tighter text-lg">Alertes : Bons en retard</h2>
@@ -2163,6 +2163,13 @@ export default function App() {
         }
         .animate-fade-in-down {
           animation: fadeInDown 0.2s ease-out forwards;
+        }
+        @keyframes modalFadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-modal-in {
+          animation: modalFadeIn 0.3s ease-out forwards;
         }
       `}} />
       <FloatingSaveButton />
