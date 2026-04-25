@@ -1118,9 +1118,6 @@ export default function App() {
                </div>
              </>
            )}
-           {!isArchived && (
-             <button onClick={() => handleSave()} className="flex-1 sm:flex-none bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black px-6 py-2 rounded font-black uppercase tracking-tight shadow-xl shadow-[#daa520]/20 transition-all">Sauvegarder</button>
-           )}
         </div>
         {formData.numeroBon && (
           <div className="w-full text-center sm:text-right mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
