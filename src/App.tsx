@@ -1078,7 +1078,7 @@ export default function App() {
           <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm transition-colors">← MENU</button>
           <div>
             <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">
-              Saisie des <span className="text-[#daa520]">bons</span>
+              {isArchived ? "Bon archivé" : (currentId ? "Saisie intervention" : "Saisie des bons")}
             </h1>
             <p className="text-[10px] md:text-xs text-[#daa520]/80 font-black uppercase tracking-widest">Maintenance Control</p>
           </div>
@@ -1719,7 +1719,7 @@ export default function App() {
     if (!Array.isArray(interventions)) return <div className="text-white p-8">Erreur : Données de statistiques indisponibles.</div>;
 
     const filtered = (interventions || []).filter((i: any) => {
-      if (!i) return false;
+      if (!i || !i.archived) return false;
       const date = i.dateSaisie || "";
       if (!date) return false;
       if (statsFilter === 'year') {
