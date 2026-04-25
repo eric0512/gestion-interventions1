@@ -1065,28 +1065,17 @@ export default function App() {
         <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
            {!currentId && (
              <>
-               {/* Input with capture specifically for Camera */}
+               {/* Input specifically for Camera */}
                <input type="file" accept="image/*" capture="environment" onChange={(e) => {
                  if (e.target.files && e.target.files.length > 0) {
                    processImage(e.target.files[0]);
                  }
                }} className="hidden" id="photo-upload-camera" />
                
-               {/* Input without capture specifically for Gallery */}
-               <input type="file" accept="image/*" onChange={(e) => {
-                 if (e.target.files && e.target.files.length > 0) {
-                   processImage(e.target.files[0]);
-                 }
-               }} className="hidden" id="photo-upload-gallery" />
-               
                <div className="flex gap-2 w-full sm:w-auto">
                  <label htmlFor="photo-upload-camera" className={`flex-1 sm:flex-none cursor-pointer bg-white/10 hover:bg-white/20 active:scale-95 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-white/20 transition-all ${isExtracting ? 'opacity-50 pointer-events-none' : ''}`}>
                    <span className="text-lg">📷</span>
-                   {isExtracting ? (extractStep || '...') : 'Photo'}
-                 </label>
-                 <label htmlFor="photo-upload-gallery" className={`flex-1 sm:flex-none cursor-pointer bg-white/10 hover:bg-white/20 active:scale-95 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-white/20 transition-all ${isExtracting ? 'opacity-50 pointer-events-none' : ''}`}>
-                   <span className="text-lg">🖼️</span>
-                   {isExtracting ? '...' : 'Galerie'}
+                   {isExtracting ? (extractStep || '...') : 'Photo du bon'}
                  </label>
                </div>
              </>
