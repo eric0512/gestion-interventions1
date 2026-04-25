@@ -370,7 +370,16 @@ export default function App() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     if (formData.archived) return;
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const nextData = { ...formData, [name]: value };
+    setFormData(nextData);
+
+    // Sauvegarde automatique si les champs obligatoires (Colmar le et Date demande) sont remplis
+    if ((name === 'dateSaisie' || name === 'dateDemande') && value) {
+      if (nextData.dateSaisie && nextData.dateDemande) {
+        handleSave(nextData);
+      }
+    }
   };
 
   const handlePassageChange = (id: string, field: string, value: any) => {
@@ -736,10 +745,19 @@ export default function App() {
             return newData;
           });
 
-          // Proposition de sauvegarde immédiate après un court délai pour laisser l'UI respirer
+          // Vérification des champs obligatoires et sauvegarde automatique
           setTimeout(() => {
-            if (finalDataForSave && window.confirm("L'analyse est terminée et les champs ont été remplis. Voulez-vous sauvegarder ce bon immédiatement ?")) {
-              handleSave(finalDataForSave);
+            if (finalDataForSave) {
+              const missing = [];
+              if (!finalDataForSave.dateSaisie) missing.push("'Colmar le'");
+              if (!finalDataForSave.dateDemande) missing.push("'Date de demande'");
+              
+              if (missing.length > 0) {
+                alert("L'analyse est terminée mais des champs obligatoires sont manquants : " + missing.join(", ") + ". Veuillez les compléter pour enregistrer.");
+              } else {
+                // Sauvegarde automatique directe
+                handleSave(finalDataForSave);
+              }
             }
           }, 800);
 
@@ -1137,7 +1155,7 @@ export default function App() {
           {!collapsedSections.admin && (
             <div className="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/5 pt-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Colmar le</label>
+                <label className="block text-[10px] font-bold text-slate-300 uppercase">Colmar le <span className="text-red-500">*</span></label>
                 <input name="dateSaisie" value={formData.dateSaisie} onChange={handleChange} disabled={isArchived} type="date" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
               </div>
               <div>
@@ -1180,7 +1198,7 @@ export default function App() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Date de demande</label>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Date de demande <span className="text-red-500">*</span></label>
                   <input 
                     name="dateDemande" 
                     value={formData.dateDemande} 
