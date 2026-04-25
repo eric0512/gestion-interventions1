@@ -701,6 +701,8 @@ export default function App() {
             return;
           }
 
+          let finalDataForSave: any = null;
+
           setFormData((prev: any) => {
             const newData = { ...prev };
             // On ne met à jour que les champs où l'IA a trouvé quelque chose de non-vide
@@ -720,8 +722,17 @@ export default function App() {
                 nomIntervenant: extractedData.nomIntervenant || newData.passages[0].nomIntervenant,
               };
             }
+            finalDataForSave = newData;
             return newData;
           });
+
+          // Proposition de sauvegarde immédiate après un court délai pour laisser l'UI respirer
+          setTimeout(() => {
+            if (finalDataForSave && window.confirm("L'analyse est terminée et les champs ont été remplis. Voulez-vous sauvegarder ce bon immédiatement ?")) {
+              handleSave(finalDataForSave);
+            }
+          }, 800);
+
         } catch (parseError: any) {
           console.error("JSON Parse Error:", parseError, "Text:", text);
           setExtractionError("Erreur de lecture du format de données renvoyé par l'IA.");
