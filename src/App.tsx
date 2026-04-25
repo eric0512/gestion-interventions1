@@ -527,8 +527,9 @@ export default function App() {
       // On attend la fin de la synchronisation avant de quitter
       await syncIntervention(itemToSync);
       
-      setView('menu');
-      console.log("Save successful, returning to menu");
+      // L'utilisateur souhaite rester sur la page pour consulter
+      alert("Bon sauvegardé avec succès !");
+      console.log("Save successful, staying on page for consultation");
     } catch (error) {
       console.error("CRITICAL ERROR in handleSave:", error);
       alert("Une erreur est survenue lors de la sauvegarde. Détails: " + (error as Error).message);
