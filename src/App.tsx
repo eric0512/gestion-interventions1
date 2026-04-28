@@ -1697,26 +1697,13 @@ export default function App() {
                   className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
                 >
                   <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
-                    {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
+                    {i.numeroBon ? `Bon n°${i.numeroBon}` : 'Sans n°'} — {i.dateDemande ? i.dateDemande.split('-').reverse().join('/') : 'Date inconnue'}
                     {isDateOlderThan30Days(i.dateDemande) && (
                       <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
                         En retard (+{getDaysElapsed(i.dateDemande)}j)
                       </span>
                     )}
                   </div>
-                  {i.passages && i.passages.length > 1 ? (
-                    <div className="text-xs text-slate-500 font-normal mt-1">
-                      {i.passages.length} passages enregistrés — Total : {(() => {
-                        const totalMin = i.passages.reduce((acc: number, p: any) => acc + parseDuration(p.tempsPasse), 0);
-                        return formatDuration(totalMin);
-                      })()}
-                    </div>
-                  ) : (i.nomIntervenant && (
-                    <div className="text-xs text-slate-500 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
-                  ))}
-                  {i.archived && (
-                    <div className="text-[10px] font-bold text-emerald-600 mt-2 uppercase">✓ Intervention clôturée</div>
-                  )}
                 </button>
                 <div className='flex gap-2'>
                   <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
@@ -1833,26 +1820,13 @@ export default function App() {
                   className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
                 >
                   <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
-                    {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
+                    {i.numeroBon ? `Bon n°${i.numeroBon}` : 'Sans n°'} — {i.dateDemande ? i.dateDemande.split('-').reverse().join('/') : 'Date inconnue'}
                     {isDateOlderThan30Days(i.dateDemande) && (
                       <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
                         En retard (+{getDaysElapsed(i.dateDemande)}j)
                       </span>
                     )}
                   </div>
-                  {i.passages && i.passages.length > 1 ? (
-                    <div className="text-xs text-slate-500 font-normal mt-1">
-                      {i.passages.length} passages enregistrés — Total : {(() => {
-                        const totalMin = i.passages.reduce((acc: number, p: any) => acc + parseDuration(p.tempsPasse), 0);
-                        return formatDuration(totalMin);
-                      })()}
-                    </div>
-                  ) : (i.nomIntervenant && (
-                    <div className="text-xs text-slate-500 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
-                  ))}
-                  {i.archived && (
-                    <div className="text-[10px] font-bold text-emerald-600 mt-2 uppercase">✓ Intervention clôturée</div>
-                  )}
                 </button>
                 <div className='flex gap-2'>
                   <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
