@@ -104,7 +104,7 @@ export default function App() {
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     return {
       dateSaisie: "",
@@ -167,7 +167,7 @@ export default function App() {
   const [isHoveringFloatingSave, setIsHoveringFloatingSave] = useState(false);
 
   // --- États pour la notification furtive ---
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
+  const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setNotification({ message, type });
@@ -203,7 +203,7 @@ export default function App() {
     if (e) e.preventDefault();
     const hash = await hashPin(pinInput);
     const stored = localStorage.getItem('app_pcode');
-    
+
     if (hash === stored) {
       setIsAuthenticated(true);
       setPinError(false);
@@ -276,12 +276,12 @@ export default function App() {
         .order('dateSaisie', { ascending: false });
 
       if (error) throw error;
-      
+
       if (data) {
         setInterventions(data.map((i: any) => {
           // Si la colonne 'archived' n'existe pas en base, on la calcule à partir des passages
-          const hasClosingState = i.passages?.some((p: any) => 
-            p.raisonNouveauPassage === 'Terminé' || 
+          const hasClosingState = i.passages?.some((p: any) =>
+            p.raisonNouveauPassage === 'Terminé' ||
             p.raisonNouveauPassage === "Intervention d'une autre entreprise nécessaire"
           );
           return {
@@ -305,10 +305,10 @@ export default function App() {
       // S'abonner aux changements en temps réel
       const channel = supabase
         .channel('db-changes')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'interventions' 
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'interventions'
         }, () => {
           fetchInterventions();
         })
@@ -343,17 +343,17 @@ export default function App() {
   // Fonction de synchronisation unitaire
   const syncIntervention = async (item: any) => {
     if (!import.meta.env.VITE_SUPABASE_URL) return;
-    
+
     setSyncStatus('syncing');
     try {
       // On retire 'archived' de l'objet envoyé à Supabase car la colonne n'existe pas
       // L'état archivé sera recalculé au chargement via le contenu des passages
       const { archived, ...dataToSync } = item;
-      
+
       const { error } = await supabase
         .from('interventions')
         .upsert(dataToSync);
-      
+
       if (error) {
         console.error("Erreur Supabase:", error);
         alert(`Erreur de synchronisation : ${error.message}\nCode: ${error.code}`);
@@ -403,7 +403,7 @@ export default function App() {
         const othersComplete = mandatoryFields.filter(f => f !== name).every(f => formData[f] && formData[f].trim() !== "");
         // On ne déclenche la sauvegarde que si ce champ était VIDE avant (donc c'est le dernier rempli)
         const wasEmpty = !formData[name] || formData[name].trim() === "";
-        
+
         if (othersComplete && wasEmpty) {
           handleSave(nextData);
         }
@@ -417,7 +417,7 @@ export default function App() {
     setFormData((prev: any) => {
       const newPassages = prev.passages.map((p: any) => p.id === id ? { ...p, [field]: value } : p);
       const currentPassage = newPassages.find((p: any) => p.id === id);
-      
+
       let nextArchived = prev.archived;
       let shouldTriggerSave = false;
       let shouldAddPassage = false;
@@ -434,11 +434,11 @@ export default function App() {
       };
 
       let finalPassages = newPassages;
-      
+
       // Logique de sauvegarde automatique sans confirmation pour le champ "État / Suite"
       if (field === 'raisonNouveauPassage' && value) {
         const isClosingState = value === 'Terminé' || value === "Intervention d'une autre entreprise nécessaire";
-        
+
         if (isClosingState) {
           const missing = getMissingFields(prev, currentPassage);
           if (missing.length > 0) {
@@ -520,27 +520,19 @@ export default function App() {
       const actualData = (dataOverride && dataOverride.nativeEvent) ? null : dataOverride;
       const dataToValidate = actualData || formData;
       console.log("Starting handleSave with data:", dataToValidate);
-      
-      // Validation: Si un champ du passage est saisi, la date, le temps et l'état deviennent obligatoires
-      const passages = dataToValidate.passages || [];
-      for (let i = 0; i < passages.length; i++) {
-        const p = passages[i];
-        const isTouched = p.dateExecution || p.tempsPasse || p.travauxRealises || p.raisonNouveauPassage;
-        
-        if (isTouched) {
-          if (!p.dateExecution) {
-            alert(`Passage #${i+1} : Veuillez renseigner la 'Date d'intervention'.`);
-            return;
-          }
-          if (!p.tempsPasse) {
-            alert(`Passage #${i+1} : Veuillez renseigner le 'Temps passé'.`);
-            return;
-          }
-          if (!p.raisonNouveauPassage) {
-            alert(`Passage #${i+1} : Veuillez sélectionner un 'État / Suite de l'intervention'.`);
-            return;
-          }
-        }
+
+      // Validation restrictive pour la saisie des bons (uniquement les 3 champs demandés)
+      if (!dataToValidate.dateSaisie) {
+        alert("Le champ 'Colmar le' est obligatoire.");
+        return;
+      }
+      if (!dataToValidate.numeroBon) {
+        alert("Le champ 'N° de bon' est obligatoire.");
+        return;
+      }
+      if (!dataToValidate.dateDemande) {
+        alert("Le champ 'Date de demande' est obligatoire.");
+        return;
       }
 
       let dataToSave = { ...dataToValidate };
@@ -552,8 +544,8 @@ export default function App() {
       }
 
       const newId = currentId || Date.now().toString();
-      const itemToSync = { 
-        ...dataToSave, 
+      const itemToSync = {
+        ...dataToSave,
         id: newId,
         archived: Boolean(dataToSave.archived)
       };
@@ -568,12 +560,12 @@ export default function App() {
           return [...prev, itemToSync];
         }
       });
-      
+
       if (!currentId) setCurrentId(newId);
 
       // On attend la fin de la synchronisation avant de quitter
       await syncIntervention(itemToSync);
-      
+
       // L'utilisateur souhaite rester sur la page pour consulter
       showNotification("Sauvegarde automatique effectuée");
       console.log("Save successful, staying on page for consultation");
@@ -684,15 +676,15 @@ export default function App() {
 
       const base64 = base64Data.split(',')[1];
       const mimeType = processedFile.type || 'image/jpeg';
-      
+
       console.log(`[Diagnostic] Taille finale avant envoi: ${processedFile.size} octets. Type: ${mimeType}`);
 
       setExtractStep("Envoi à l'IA...");
-      
+
       if (!API_KEY) {
         throw new Error("La clé API Gemini n'est pas configurée.");
       }
-      
+
       // Liste des modèles DÉTECTÉS via votre diagnostic (Vérifié !)
       const modelsToTry = [
         "gemini-2.5-flash",
@@ -717,7 +709,7 @@ export default function App() {
           setExtractStep(`Analyse (${modelName})...`);
 
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
-          
+
           const payload = {
             contents: [{
               parts: [
@@ -734,12 +726,12 @@ export default function App() {
             body: JSON.stringify(payload)
           });
 
-          const timeoutPromise = new Promise<any>((_, reject) => 
+          const timeoutPromise = new Promise<any>((_, reject) =>
             setTimeout(() => reject(new Error("Timeout")), 30000)
           );
 
           const responseRaw: any = await Promise.race([fetchPromise, timeoutPromise]);
-          
+
           if (!responseRaw.ok) {
             const errorText = await responseRaw.text();
             throw new Error(errorText);
@@ -764,10 +756,10 @@ export default function App() {
         if (text.startsWith("```json")) text = text.replace(/^```json/, "");
         if (text.startsWith("```")) text = text.replace(/^```/, "");
         if (text.endsWith("```")) text = text.replace(/```$/, "");
-        
+
         try {
           const extractedData = JSON.parse(text);
-          
+
           // Vérifier si l'IA a vraiment trouvé quelque chose
           const hasData = Object.values(extractedData).some(val => val && String(val).trim() !== "");
           if (!hasData) {
@@ -785,7 +777,7 @@ export default function App() {
                 newData[key] = extractedData[key];
               }
             });
-            
+
             if (newData.passages && newData.passages.length > 0) {
               newData.passages = [...newData.passages];
               newData.passages[0] = {
@@ -808,7 +800,7 @@ export default function App() {
               if (!finalDataForSave.dateSaisie) missing.push("'Colmar le'");
               if (!finalDataForSave.dateDemande) missing.push("'Date de demande'");
               if (!finalDataForSave.numeroBon) missing.push("'N° de bon'");
-              
+
               if (missing.length > 0) {
                 alert("L'analyse est terminée mais des champs obligatoires sont manquants : " + missing.join(", ") + ". Veuillez les compléter pour enregistrer.");
               } else {
@@ -829,7 +821,7 @@ export default function App() {
     } catch (error: any) {
       console.error("Extraction error:", error);
       let errorMessage = error?.message || "Erreur de connexion lors du traitement.";
-      
+
       try {
         if (errorMessage.includes('{')) {
           const start = errorMessage.indexOf('{');
@@ -839,7 +831,7 @@ export default function App() {
             errorMessage = parsed.error.message;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       setExtractionError(errorMessage);
     } finally {
@@ -849,7 +841,7 @@ export default function App() {
 
   const handleDevisPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-    
+
     setIsUploadingDevis(true);
     try {
       const files = Array.from(e.target.files) as File[];
@@ -888,7 +880,7 @@ export default function App() {
           fileType: "image/jpeg"
         };
         const compressedFile = await imageCompression(portraitFile, options);
-        
+
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
@@ -898,7 +890,7 @@ export default function App() {
         newPhotos.push(dataUrl);
 
       }
-      
+
       setPendingDevisPhotos(prev => [...prev, ...newPhotos]);
     } catch (err: any) {
       console.error("Erreur capture photos:", err);
@@ -910,43 +902,43 @@ export default function App() {
 
   const generateFinalDevisPDF = async () => {
     if (pendingDevisPhotos.length === 0) return;
-    
+
     setIsUploadingDevis(true);
     try {
       const pdf = new jsPDF();
-      
+
       for (let i = 0; i < pendingDevisPhotos.length; i++) {
         if (i > 0) pdf.addPage();
-        
+
         const dataUrl = pendingDevisPhotos[i];
         const imgProps = pdf.getImageProperties(dataUrl);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         pdf.addImage(dataUrl, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       }
-      
+
       const pdfBlob = pdf.output('blob');
       const fileName = `devis_${currentId || 'new'}_${Date.now()}.pdf`;
       const filePath = `${currentId || 'temp'}/${fileName}`;
-      
+
       const { data, error } = await supabase.storage
         .from('devis')
         .upload(filePath, pdfBlob);
-        
+
       if (error) throw error;
-      
+
       const { data: { publicUrl } } = supabase.storage
         .from('devis')
         .getPublicUrl(filePath);
-        
+
       const updatedData = { ...formData, urlDevis: publicUrl };
       setFormData(updatedData);
       setPendingDevisPhotos([]); // Vider le buffer
-      
+
       if (currentId) {
         syncIntervention({ ...updatedData, id: currentId });
       }
-      
+
       alert("Devis PDF généré avec succès ! (" + pendingDevisPhotos.length + " pages)");
     } catch (err: any) {
       console.error("Erreur génération PDF:", err);
@@ -958,11 +950,11 @@ export default function App() {
 
   const removeDevis = async () => {
     if (!window.confirm("Voulez-vous vraiment supprimer ce devis ?")) return;
-    
+
     const oldUrl = formData.urlDevis;
     const updatedData = { ...formData, urlDevis: null };
     setFormData(updatedData);
-    
+
     if (currentId) {
       syncIntervention({ ...updatedData, id: currentId });
     }
@@ -986,7 +978,7 @@ export default function App() {
     setIsExtracting(false);
     setIsAiProcessed(false); // Reset de l'état IA pour une nouvelle saisie ou modif manuelle
     setFocusedElement({ id: "", rect: null });
-    
+
     // Ignorer si c'est un objet événement
     if (data && data.nativeEvent) data = null;
 
@@ -1053,7 +1045,7 @@ export default function App() {
   const handleFieldFocus = (e: any) => {
     if (formData.archived) return;
     if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
-    
+
     const fieldId = e.target.name || e.target.id;
     const rect = e.target.getBoundingClientRect();
     setFocusedElement({ id: fieldId, rect });
@@ -1065,9 +1057,9 @@ export default function App() {
 
   const FloatingSaveButton = () => {
     if (formData.archived || !focusedElement.id || !focusedElement.rect) return null;
-    
+
     return (
-      <div 
+      <div
         className="fixed z-[1000] transition-all duration-300 ease-out pointer-events-auto"
         style={{
           left: focusedElement.rect.left + focusedElement.rect.width / 2,
@@ -1093,7 +1085,7 @@ export default function App() {
 
   const LateInterventionsModal = () => {
     if (!showLateModal) return null;
-    
+
     const lateOnes = interventions.filter((i: any) => !i.archived && isDateOlderThan30Days(i.dateDemande));
     if (lateOnes.length === 0) return null;
 
@@ -1111,7 +1103,7 @@ export default function App() {
               {lateOnes.map((i: any) => (
                 <div key={i.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex justify-between items-center hover:bg-white/10 transition-colors">
                   <div>
-                    <button 
+                    <button
                       onClick={() => {
                         handleOpenSaisie(i);
                         setShowLateModal(false);
@@ -1131,7 +1123,7 @@ export default function App() {
             </div>
           </div>
           <div className="p-4 border-t border-white/5 bg-white/5 flex justify-end">
-            <button 
+            <button
               onClick={() => setShowLateModal(false)}
               className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-black uppercase rounded-lg transition-all"
             >
@@ -1147,8 +1139,8 @@ export default function App() {
     <div className="w-full max-w-lg bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg overflow-hidden">
       <div className="bg-[#1B263B] p-5 border-b border-white/5">
         <div className="flex items-center gap-4">
-          <button 
-            onClick={fetchInterventions} 
+          <button
+            onClick={fetchInterventions}
             className="relative flex-shrink-0 group transition-transform active:scale-95"
             title="Rafraîchir les données"
           >
@@ -1160,7 +1152,7 @@ export default function App() {
               {syncStatus === 'offline' && <CloudOff size={16} className="text-slate-500" />}
             </div>
           </button>
-          
+
           <h1 className="text-xl font-black tracking-widest flex items-center gap-2">
             <span className="text-white uppercase">Maintenance</span>
             <span className="text-[#daa520] uppercase">Colmar</span>
@@ -1168,95 +1160,95 @@ export default function App() {
         </div>
       </div>
       <div className="p-8">
-      <div className="space-y-6 pb-2">
-        <button 
-          onClick={() => handleOpenSaisie()} 
-          className="w-full bg-gradient-to-r from-[#b8860b] via-[#ffd700] to-[#daa520] text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:brightness-105 transition-all group border border-[#daa520]/30"
-        >
-          <div className="flex items-center gap-4 px-6 py-4 w-full">
-            <div className="bg-black/5 p-2 rounded-lg">
-              <ClipboardEdit size={40} strokeWidth={1.2} className="text-black/80" />
+        <div className="space-y-6 pb-2">
+          <button
+            onClick={() => handleOpenSaisie()}
+            className="w-full bg-gradient-to-r from-[#b8860b] via-[#ffd700] to-[#daa520] text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:brightness-105 transition-all group border border-[#daa520]/30"
+          >
+            <div className="flex items-center gap-4 px-6 py-4 w-full">
+              <div className="bg-black/5 p-2 rounded-lg">
+                <ClipboardEdit size={40} strokeWidth={1.2} className="text-black/80" />
+              </div>
+              <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
+                Saisie des bons d'interventions
+              </span>
+              <ChevronRight size={32} className="text-white drop-shadow-md" strokeWidth={3} />
             </div>
-            <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
-              Saisie des bons d'interventions
-            </span>
-            <ChevronRight size={32} className="text-white drop-shadow-md" strokeWidth={3} />
-          </div>
-        </button>
-        <button 
-          onClick={() => setView('consultation')} 
-          className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
-        >
-          <div className="flex items-center gap-4 px-6 py-4 w-full">
-            <div className="bg-black/5 p-2 rounded-lg">
-              <ClipboardList size={40} strokeWidth={1.2} className="text-black/80" />
+          </button>
+          <button
+            onClick={() => setView('consultation')}
+            className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
+          >
+            <div className="flex items-center gap-4 px-6 py-4 w-full">
+              <div className="bg-black/5 p-2 rounded-lg">
+                <ClipboardList size={40} strokeWidth={1.2} className="text-black/80" />
+              </div>
+              <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
+                Consultation des interventions
+              </span>
+              <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
             </div>
-            <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
-              Consultation des interventions
-            </span>
-            <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
-          </div>
-        </button>
+          </button>
 
-        <button 
-          onClick={() => {
-            setSearchQuery("");
-            setSearchStartDate("");
-            setSearchEndDate(getTodayFormatted());
-            setView('recherche');
-          }} 
-          className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
-        >
-          <div className="flex items-center gap-4 px-6 py-4 w-full">
-            <div className="bg-black/5 p-2 rounded-lg">
-              <Database size={40} strokeWidth={1.2} className="text-black/80" />
+          <button
+            onClick={() => {
+              setSearchQuery("");
+              setSearchStartDate("");
+              setSearchEndDate(getTodayFormatted());
+              setView('recherche');
+            }}
+            className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
+          >
+            <div className="flex items-center gap-4 px-6 py-4 w-full">
+              <div className="bg-black/5 p-2 rounded-lg">
+                <Database size={40} strokeWidth={1.2} className="text-black/80" />
+              </div>
+              <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
+                Recherche d'intervention
+              </span>
+              <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
             </div>
-            <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
-              Recherche d'intervention
-            </span>
-            <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
-          </div>
-        </button>
+          </button>
 
-        <button 
-          onClick={() => setView('stats')} 
-          className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
-        >
-          <div className="flex items-center gap-4 px-6 py-4 w-full">
-            <div className="bg-black/5 p-2 rounded-lg">
-              <BarChart3 size={40} strokeWidth={1.2} className="text-black/80" />
-            </div>
-            <span className="text-left text-lg font-black uppercase tracking-tighter leading-tight mr-4">
-              Statistiques
-            </span>
-            
-            {/* Mini Dashboard Style as per image */}
-            <div className="flex-grow flex items-center justify-end gap-6 pr-4 border-l border-slate-200 pl-4 py-1">
-              <div className="hidden sm:block">
-                <p className="text-[8px] font-bold text-slate-500 uppercase mb-1">Statut de flotte</p>
-                <div className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="text-[8px] font-bold">OK</span></div>
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#daa520]"></div><span className="text-[8px] font-bold">ATTENTION</span></div>
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div><span className="text-[8px] font-bold">CRITICAL</span></div>
+          <button
+            onClick={() => setView('stats')}
+            className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
+          >
+            <div className="flex items-center gap-4 px-6 py-4 w-full">
+              <div className="bg-black/5 p-2 rounded-lg">
+                <BarChart3 size={40} strokeWidth={1.2} className="text-black/80" />
+              </div>
+              <span className="text-left text-lg font-black uppercase tracking-tighter leading-tight mr-4">
+                Statistiques
+              </span>
+
+              {/* Mini Dashboard Style as per image */}
+              <div className="flex-grow flex items-center justify-end gap-6 pr-4 border-l border-slate-200 pl-4 py-1">
+                <div className="hidden sm:block">
+                  <p className="text-[8px] font-bold text-slate-500 uppercase mb-1">Statut de flotte</p>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="text-[8px] font-bold">OK</span></div>
+                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#daa520]"></div><span className="text-[8px] font-bold">ATTENTION</span></div>
+                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div><span className="text-[8px] font-bold">CRITICAL</span></div>
+                  </div>
+                </div>
+                <div className="hidden md:block">
+                  <p className="text-[8px] font-bold text-slate-500 uppercase mb-1">Dernières actions</p>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[7px] font-bold">Brief - approves</span>
+                    <span className="text-[7px] font-bold">Brief - news</span>
+                    <span className="text-[7px] font-bold">Brief - interventions</span>
+                  </div>
                 </div>
               </div>
-              <div className="hidden md:block">
-                <p className="text-[8px] font-bold text-slate-500 uppercase mb-1">Dernières actions</p>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[7px] font-bold">Brief - approves</span>
-                  <span className="text-[7px] font-bold">Brief - news</span>
-                  <span className="text-[7px] font-bold">Brief - interventions</span>
-                </div>
-              </div>
+
+              <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
             </div>
-            
-            <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
-          </div>
-        </button>
-      </div>
-      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-center">
-        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Système Industriel v2.5</p>
-      </div>
+          </button>
+        </div>
+        <div className="mt-8 pt-4 border-t border-slate-200 flex justify-center">
+          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Système Industriel v2.5</p>
+        </div>
       </div>
     </div>
   );
@@ -1265,409 +1257,423 @@ export default function App() {
     const isArchived = Boolean(formData.archived);
 
     return (
-    <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
-      <div ref={formTopRef} className="absolute -top-20" />
-      <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b border-white/5 shadow-md">
-        <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
-          <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm transition-colors">← MENU</button>
-          <div>
-            <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">
-              {isArchived ? "Bon archivé" : (currentId ? "Saisie intervention" : "Saisie des bons")}
-            </h1>
-            <p className="text-[10px] md:text-xs text-[#daa520]/80 font-black uppercase tracking-widest">Maintenance Control</p>
+      <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
+        <div ref={formTopRef} className="absolute -top-20" />
+        <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b border-white/5 shadow-md">
+          <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
+            <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm transition-colors">← MENU</button>
+            <div>
+              <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">
+                {isArchived ? "Bon archivé" : (currentId ? "Saisie intervention" : "Saisie des bons")}
+              </h1>
+              <p className="text-[10px] md:text-xs text-[#daa520]/80 font-black uppercase tracking-widest">Maintenance Control</p>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
-           {!currentId && (
-             <>
-               {/* Input specifically for Camera */}
-               <input type="file" accept="image/*" capture="environment" onChange={(e) => {
-                 if (e.target.files && e.target.files.length > 0) {
-                   processImage(e.target.files[0]);
-                 }
-               }} className="hidden" id="photo-upload-camera" />
-               
-               <div className="flex gap-2 w-full sm:w-auto">
-                 <label htmlFor="photo-upload-camera" className={`flex-1 sm:flex-none cursor-pointer bg-white/10 hover:bg-white/20 active:scale-95 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-white/20 transition-all ${isExtracting ? 'opacity-50 pointer-events-none' : ''}`}>
-                   <span className="text-lg">📷</span>
-                   {isExtracting ? (extractStep || '...') : 'Photo du bon'}
-                 </label>
-               </div>
-             </>
-           )}
-        </div>
-        {formData.numeroBon && (
-          <div className="w-full text-center sm:text-right mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
-            <span className="text-[10px] md:text-xs font-black text-[#daa520] uppercase tracking-widest bg-[#daa520]/10 px-3 py-1 rounded-full border border-[#daa520]/20">
-              N° de bon : {formData.numeroBon}
-            </span>
+          <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
+            {!currentId && (
+              <>
+                {/* Input specifically for Camera */}
+                <input type="file" accept="image/*" capture="environment" onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    processImage(e.target.files[0]);
+                  }
+                }} className="hidden" id="photo-upload-camera" />
+
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <label htmlFor="photo-upload-camera" className={`flex-1 sm:flex-none cursor-pointer bg-white/10 hover:bg-white/20 active:scale-95 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-white/20 transition-all ${isExtracting ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <span className="text-lg">📷</span>
+                    {isExtracting ? (extractStep || '...') : 'Photo du bon'}
+                  </label>
+                </div>
+              </>
+            )}
+          </div>
+          {formData.numeroBon && (
+            <div className="w-full text-center sm:text-right mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
+              <span className="text-[10px] md:text-xs font-black text-[#daa520] uppercase tracking-widest bg-[#daa520]/10 px-3 py-1 rounded-full border border-[#daa520]/20">
+                N° de bon : {formData.numeroBon}
+              </span>
+            </div>
+          )}
+        </header>
+
+        {extractionError && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 m-4" role="alert">
+            <p className="font-bold">Erreur d'analyse</p>
+            <p className="text-sm">{extractionError}</p>
           </div>
         )}
-      </header>
-      
-      {extractionError && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 m-4" role="alert">
-          <p className="font-bold">Erreur d'analyse</p>
-          <p className="text-sm">{extractionError}</p>
-        </div>
-      )}
 
-      <form 
-        className="p-4 md:p-6 space-y-3"
-        onFocusCapture={handleFieldFocus}
-      >
-        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
-          <button 
-            type="button"
-            onClick={() => setCollapsedSections(prev => ({ ...prev, admin: !prev.admin }))}
-            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
-          >
-            <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
-              <FileText size={16} /> Données Administratives
-            </h3>
-            {collapsedSections.admin ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
-          </button>
-          
-          {!collapsedSections.admin && (
-            <div className="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/5 pt-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Colmar le <span className="text-red-500">*</span></label>
-                <input name="dateSaisie" value={formData.dateSaisie} onChange={handleChange} disabled={isArchived} type="date" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">N° de bon <span className="text-red-500">*</span></label>
-                <div className="flex gap-2">
-                  <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} disabled={isArchived} type="text" className="flex-grow border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
-                  {formData.photo_url && (
-                    <button 
-                      type="button" 
-                      onClick={() => window.open(formData.photo_url, '_blank')}
-                      className="bg-[#daa520] hover:bg-[#ffb700] text-black text-[10px] font-black px-3 py-1.5 rounded uppercase flex items-center gap-1 transition-all shadow-sm"
-                    >
-                      <Camera size={14} /> Bons Photos
-                    </button>
-                  )}
-                </div>
-              </div></div>
-          )}
-        </div>
-        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
-          <div className="p-3">
-            <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2 mb-4">
-              <User size={16} /> Informations Demandeur
-            </h3>
-            
-            {/* Priority Fields: Always visible */}
-            <div className="space-y-4 mb-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">
-                  Demandeur
-                </label>
-                <input 
-                  name="demandeur" 
-                  value={formData.demandeur} 
-                  onChange={handleChange} 
-                  disabled={isArchived} 
-                  type="text" 
-                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" 
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form
+          className="p-4 md:p-6 space-y-3"
+          onFocusCapture={handleFieldFocus}
+        >
+          <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setCollapsedSections(prev => ({ ...prev, admin: !prev.admin }))}
+              className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+            >
+              <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
+                <FileText size={16} /> Données Administratives
+              </h3>
+              {collapsedSections.admin ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
+            </button>
+
+            {!collapsedSections.admin && (
+              <div className="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/5 pt-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Date de demande <span className="text-red-500">*</span></label>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Colmar le <span className="text-red-500">*</span></label>
                   <input 
-                    name="dateDemande" 
-                    value={formData.dateDemande} 
+                    name="dateSaisie" 
+                    value={formData.dateSaisie} 
                     onChange={handleChange} 
-                    onFocus={() => {
-                      if (!formData.dateDemande && formData.dateSaisie) {
-                        setFormData(prev => ({ ...prev, dateDemande: formData.dateSaisie }));
-                      }
-                    }}
+                    disabled={isArchived} 
                     type="date" 
-                    disabled={isArchived}
-                    className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" 
+                    className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 disabled:opacity-75 ${!formData.dateSaisie ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`} 
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Date de devis</label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-grow max-w-[160px]">
-                      <input 
-                        name="dateDevis" 
-                        value={formData.dateDevis} 
-                        min={formData.dateDemande || formData.dateSaisie} 
-                        onChange={handleChange} 
-                        onFocus={() => {
-                          const fallbackDate = formData.dateDemande || formData.dateSaisie;
-                          if (!formData.dateDevis && fallbackDate) {
-                            setFormData(prev => ({ ...prev, dateDevis: fallbackDate }));
-                          }
-                        }}
-                        type="date" 
-                        disabled={isArchived}
-                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" 
-                      />
-                    </div>
-                    
-                    <div className="flex-shrink-0">
-                      <input 
-                        type="file" 
-                        ref={devisInputRef}
-                        onChange={handleDevisPhotos}
-                        accept="image/*" 
-                        capture="environment"
-                        multiple 
-                        className="hidden" 
-                      />
-                      {formData.urlDevis ? (
-                        <div className="flex items-center gap-2">
-                          <a 
-                            href={formData.urlDevis} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-3 py-2 rounded uppercase flex items-center gap-2 transition-colors shadow-sm"
-                          >
-                            <FileText size={14} /> Voir
-                          </a>
-                          {!isArchived && (
-                            <button
-                              type="button"
-                              onClick={removeDevis}
-                              className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">N° de bon <span className="text-red-500">*</span></label>
+                  <div className="flex gap-2">
+                    <input 
+                      name="numeroBon" 
+                      value={formData.numeroBon} 
+                      onChange={handleChange} 
+                      disabled={isArchived} 
+                      type="text" 
+                      className={`flex-grow border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 font-bold disabled:opacity-75 ${!formData.numeroBon ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`} 
+                    />
+                    {formData.photo_url && (
+                      <button
+                        type="button"
+                        onClick={() => window.open(formData.photo_url, '_blank')}
+                        className="bg-[#daa520] hover:bg-[#ffb700] text-black text-[10px] font-black px-3 py-1.5 rounded uppercase flex items-center gap-1 transition-all shadow-sm"
+                      >
+                        <Camera size={14} /> Bons Photos
+                      </button>
+                    )}
+                  </div>
+                </div></div>
+            )}
+          </div>
+          <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+            <div className="p-3">
+              <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2 mb-4">
+                <User size={16} /> Informations Demandeur
+              </h3>
+
+              {/* Priority Fields: Always visible */}
+              <div className="space-y-4 mb-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">
+                    Demandeur
+                  </label>
+                  <input
+                    name="demandeur"
+                    value={formData.demandeur}
+                    onChange={handleChange}
+                    disabled={isArchived}
+                    type="text"
+                    className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-300 uppercase">Date de demande <span className="text-red-500">*</span></label>
+                    <input
+                      name="dateDemande"
+                      value={formData.dateDemande}
+                      onChange={handleChange}
+                      onFocus={() => {
+                        if (!formData.dateDemande && formData.dateSaisie) {
+                          setFormData(prev => ({ ...prev, dateDemande: formData.dateSaisie }));
+                        }
+                      }}
+                      type="date"
+                      disabled={isArchived}
+                      className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 disabled:opacity-75 ${!formData.dateDemande ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Date de devis</label>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-grow max-w-[160px]">
+                        <input
+                          name="dateDevis"
+                          value={formData.dateDevis}
+                          min={formData.dateDemande || formData.dateSaisie}
+                          onChange={handleChange}
+                          onFocus={() => {
+                            const fallbackDate = formData.dateDemande || formData.dateSaisie;
+                            if (!formData.dateDevis && fallbackDate) {
+                              setFormData(prev => ({ ...prev, dateDevis: fallbackDate }));
+                            }
+                          }}
+                          type="date"
+                          disabled={isArchived}
+                          className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75"
+                        />
+                      </div>
+
+                      <div className="flex-shrink-0">
+                        <input
+                          type="file"
+                          ref={devisInputRef}
+                          onChange={handleDevisPhotos}
+                          accept="image/*"
+                          capture="environment"
+                          multiple
+                          className="hidden"
+                        />
+                        {formData.urlDevis ? (
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={formData.urlDevis}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-3 py-2 rounded uppercase flex items-center gap-2 transition-colors shadow-sm"
                             >
-                              <X size={16} />
-                            </button>
-                          )}
-                        </div>
-                      ) : pendingDevisPhotos.length > 0 ? (
-                        <button
-                          type="button"
-                          onClick={generateFinalDevisPDF}
-                          disabled={isUploadingDevis || isArchived}
-                          className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-2 py-1.5 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
-                        >
-                          {isUploadingDevis ? <Loader2 size={12} className="animate-spin" /> : "OK (" + pendingDevisPhotos.length + ")"}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => devisInputRef.current?.click()}
-                          disabled={isUploadingDevis || isArchived}
-                          className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-2 py-1.5 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
-                        >
-                          <Camera size={14} /> Photo
+                              <FileText size={14} /> Voir
+                            </a>
+                            {!isArchived && (
+                              <button
+                                type="button"
+                                onClick={removeDevis}
+                                className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                              >
+                                <X size={16} />
+                              </button>
+                            )}
+                          </div>
+                        ) : pendingDevisPhotos.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={generateFinalDevisPDF}
+                            disabled={isUploadingDevis || isArchived}
+                            className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-2 py-1.5 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
+                          >
+                            {isUploadingDevis ? <Loader2 size={12} className="animate-spin" /> : "OK (" + pendingDevisPhotos.length + ")"}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => devisInputRef.current?.click()}
+                            disabled={isUploadingDevis || isArchived}
+                            className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-2 py-1.5 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
+                          >
+                            <Camera size={14} /> Photo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Trigger for General Info */}
+              <button
+                type="button"
+                onClick={() => setCollapsedSections(prev => ({ ...prev, demandeur: !prev.demandeur }))}
+                className="text-[10px] font-black text-[#daa520]/70 hover:text-[#daa520] uppercase flex items-center gap-1 transition-colors"
+              >
+                {collapsedSections.demandeur ? 'Voir plus d\'infos demandeur ↓' : 'Voir moins d\'infos demandeur ↑'}
+              </button>
+            </div>
+
+            {!collapsedSections.demandeur && (
+              <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Référence Bâtiment</label>
+                  <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setCollapsedSections(prev => ({ ...prev, localisation: !prev.localisation }))}
+              className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+            >
+              <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
+                <MapPin size={16} /> Localisation
+              </h3>
+              {collapsedSections.localisation ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
+            </button>
+
+            {!collapsedSections.localisation && (
+              <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Lieu</label>
+                  <input name="lieu" value={formData.lieu} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-300 uppercase">Étage</label>
+                    <input name="etage" value={formData.etage} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-300 uppercase">Pièce</label>
+                    <input name="piece" value={formData.piece} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setCollapsedSections(prev => ({ ...prev, details: !prev.details }))}
+              className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+            >
+              <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
+                <Settings size={16} /> Détails de l'intervention
+              </h3>
+              {collapsedSections.details ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
+            </button>
+
+            {!collapsedSections.details && (
+              <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
+                <div className="mb-4">
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Demande</label>
+                  <input name="demande" value={formData.demande} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Description de l'intervention</label>
+                  <textarea name="description" value={formData.description} onChange={handleChange} disabled={isArchived} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 h-24 resize-none disabled:opacity-75" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {currentId && (
+            <section ref={passagesRef} className="border-t border-slate-200 pt-8 mt-8 scroll-mt-32">
+              <div className="flex justify-between items-center border-b-2 border-[#daa520] pb-1 mb-3">
+                <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider">Retour de fiche / Passages</h3>
+              </div>
+
+              <div className="space-y-6">
+                {formData.passages?.map((passage: any, index: number) => (
+                  <div key={passage.id} className="bg-white text-slate-900/50 p-4 rounded border border-slate-200 relative">
+                    <div className="absolute top-4 right-4">
+                      {formData.passages.length > 1 && !isArchived && (
+                        <button type="button" onClick={() => removePassage(passage.id)} className="text-red-500 hover:text-red-700" aria-label="Supprimer ce passage">
+                          <Trash2 size={16} />
                         </button>
                       )}
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                    <h4 className="text-xs font-bold text-slate-700 mb-4">Intervention #{index + 1}</h4>
 
-            {/* Trigger for General Info */}
-            <button 
-              type="button"
-              onClick={() => setCollapsedSections(prev => ({ ...prev, demandeur: !prev.demandeur }))}
-              className="text-[10px] font-black text-[#daa520]/70 hover:text-[#daa520] uppercase flex items-center gap-1 transition-colors"
-            >
-              {collapsedSections.demandeur ? 'Voir plus d\'infos demandeur ↓' : 'Voir moins d\'infos demandeur ↑'}
-            </button>
-          </div>
-
-          {!collapsedSections.demandeur && (
-            <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Référence Bâtiment</label>
-                <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
-          <button 
-            type="button"
-            onClick={() => setCollapsedSections(prev => ({ ...prev, localisation: !prev.localisation }))}
-            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
-          >
-            <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
-              <MapPin size={16} /> Localisation
-            </h3>
-            {collapsedSections.localisation ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
-          </button>
-          
-          {!collapsedSections.localisation && (
-            <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Lieu</label>
-                <input name="lieu" value={formData.lieu} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Étage</label>
-                  <input name="etage" value={formData.etage} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Pièce</label>
-                  <input name="piece" value={formData.piece} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
-          <button 
-            type="button"
-            onClick={() => setCollapsedSections(prev => ({ ...prev, details: !prev.details }))}
-            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
-          >
-            <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
-              <Settings size={16} /> Détails de l'intervention
-            </h3>
-            {collapsedSections.details ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
-          </button>
-          
-          {!collapsedSections.details && (
-            <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
-              <div className="mb-4">
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Demande</label>
-                <input name="demande" value={formData.demande} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Description de l'intervention</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} disabled={isArchived} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 h-24 resize-none disabled:opacity-75" />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {currentId && (
-          <section ref={passagesRef} className="border-t border-slate-200 pt-8 mt-8 scroll-mt-32">
-            <div className="flex justify-between items-center border-b-2 border-[#daa520] pb-1 mb-3">
-              <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider">Retour de fiche / Passages</h3>
-            </div>
-            
-            <div className="space-y-6">
-              {formData.passages?.map((passage: any, index: number) => (
-                <div key={passage.id} className="bg-white text-slate-900/50 p-4 rounded border border-slate-200 relative">
-                  <div className="absolute top-4 right-4">
-                     {formData.passages.length > 1 && !isArchived && (
-                       <button type="button" onClick={() => removePassage(passage.id)} className="text-red-500 hover:text-red-700" aria-label="Supprimer ce passage">
-                         <Trash2 size={16} />
-                       </button>
-                     )}
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-700 mb-4">Intervention #{index + 1}</h4>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-300 uppercase">
-                        Date d'intervention {(passage.tempsPasse || passage.travauxRealises || passage.raisonNouveauPassage) && <span className="text-red-500">*</span>}
-                      </label>
-                      <input 
-                        type="date" 
-                        value={passage.dateExecution} 
-                        disabled={isArchived}
-                        min={formData.dateSaisie} 
-                        onChange={(e) => handlePassageChange(passage.id, 'dateExecution', e.target.value)} 
-                        onFocus={() => { if (!passage.dateExecution && formData.dateSaisie) handlePassageChange(passage.id, 'dateExecution', formData.dateSaisie) }} 
-                        className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white disabled:opacity-75 ${(passage.tempsPasse || passage.travauxRealises || passage.raisonNouveauPassage) && !passage.dateExecution ? 'border-red-500 bg-red-50' : 'border-slate-300'}`} 
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-300 uppercase">
+                          Date d'intervention
+                        </label>
+                        <input 
+                          type="date" 
+                          value={passage.dateExecution} 
+                          disabled={isArchived}
+                          min={formData.dateSaisie} 
+                          onChange={(e) => handlePassageChange(passage.id, 'dateExecution', e.target.value)} 
+                          onFocus={() => { if (!passage.dateExecution && formData.dateSaisie) handlePassageChange(passage.id, 'dateExecution', formData.dateSaisie) }} 
+                          className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white disabled:opacity-75" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-300 uppercase">
+                          Temps passé
+                        </label>
+                        <input 
+                          list="temps-passe-list" 
+                          value={passage.tempsPasse} 
+                          disabled={isArchived}
+                          onChange={(e) => handlePassageChange(passage.id, 'tempsPasse', e.target.value)} 
+                          type="text" 
+                          placeholder="ex: 02h30" 
+                          className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold disabled:opacity-75" 
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-300 uppercase">
-                        Temps passé {(passage.dateExecution || passage.travauxRealises || passage.raisonNouveauPassage) && <span className="text-red-500">*</span>}
-                      </label>
-                      <input 
-                        list="temps-passe-list" 
-                        value={passage.tempsPasse} 
-                        disabled={isArchived}
-                        onChange={(e) => handlePassageChange(passage.id, 'tempsPasse', e.target.value)} 
-                        type="text" 
-                        placeholder="ex: 02h30" 
-                        className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold disabled:opacity-75 ${(passage.dateExecution || passage.travauxRealises || passage.raisonNouveauPassage) && !passage.tempsPasse ? 'border-red-500 bg-red-50' : 'border-slate-300'}`} 
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <label className="block text-[10px] font-bold text-slate-300 uppercase">Nom de l'intervenant</label>
-                    <select 
-                      value={passage.nomIntervenant} 
-                      disabled={isArchived}
-                      onChange={(e) => handlePassageChange(passage.id, 'nomIntervenant', e.target.value)} 
-                      className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold disabled:opacity-75"
-                    >
-                      <option value="Christophe Meyer">Christophe Meyer</option>
-                      <option value="Autre">Autre...</option>
-                    </select>
-                  </div>
 
-                  <div className="mb-4">
-                    <label className="block text-[10px] font-bold text-slate-300 uppercase">Travaux réalisés</label>
-                    <textarea 
-                      value={passage.travauxRealises} 
-                      disabled={isArchived}
-                      onChange={(e) => handlePassageChange(passage.id, 'travauxRealises', e.target.value)} 
-                      className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white h-24 resize-none disabled:opacity-75" 
-                    />
-                  </div>
-                  
-                  <div className="pt-4 border-t border-slate-200 space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">
-                        État / Suite de l'intervention {(passage.dateExecution || passage.tempsPasse || passage.travauxRealises) && <span className="text-red-500">*</span>}
-                      </label>
-                      <select 
-                        value={passage.raisonNouveauPassage || ""} 
-                        onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)} 
-                        className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold ${(passage.dateExecution || passage.tempsPasse || passage.travauxRealises) && !passage.raisonNouveauPassage ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
+                    <div className="mb-4">
+                      <label className="block text-[10px] font-bold text-slate-300 uppercase">Nom de l'intervenant</label>
+                      <select
+                        value={passage.nomIntervenant}
+                        disabled={isArchived}
+                        onChange={(e) => handlePassageChange(passage.id, 'nomIntervenant', e.target.value)}
+                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold disabled:opacity-75"
                       >
-                        <option value="">Sélectionner l'état</option>
-                        {[
-                          "Autre passage nécessaire",
-                          "Demande de devis",
-                          "Intervention d'une autre entreprise nécessaire",
-                          "Pièce(s) manquante(s)",
-                          "Terminé"
-                        ].sort((a, b) => a.localeCompare(b, 'fr')).map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
+                        <option value="Christophe Meyer">Christophe Meyer</option>
+                        <option value="Autre">Autre...</option>
                       </select>
                     </div>
+
+                    <div className="mb-4">
+                      <label className="block text-[10px] font-bold text-slate-300 uppercase">Travaux réalisés</label>
+                      <textarea
+                        value={passage.travauxRealises}
+                        disabled={isArchived}
+                        onChange={(e) => handlePassageChange(passage.id, 'travauxRealises', e.target.value)}
+                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white h-24 resize-none disabled:opacity-75"
+                      />
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-200 space-y-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">
+                          État / Suite de l'intervention
+                        </label>
+                        <select
+                          value={passage.raisonNouveauPassage || ""}
+                          onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)}
+                          className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold"
+                        >
+                          <option value="">Sélectionner l'état</option>
+                          {[
+                            "Autre passage nécessaire",
+                            "Demande de devis",
+                            "Intervention d'une autre entreprise nécessaire",
+                            "Pièce(s) manquante(s)",
+                            "Terminé"
+                          ].sort((a, b) => a.localeCompare(b, 'fr')).map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
                   </div>
+                ))}
+              </div>
 
-                </div>
-              ))}
-            </div>
+              <datalist id="temps-passe-list">
+                <option value="01h00" />
+                <option value="02h00" />
+                <option value="03h00" />
+                <option value="04h00" />
+                <option value="05h00" />
+                <option value="06h00" />
+                <option value="07h00" />
+                <option value="08h00" />
+              </datalist>
+            </section>
+          )}
 
-            <datalist id="temps-passe-list">
-              <option value="01h00" />
-              <option value="02h00" />
-              <option value="03h00" />
-              <option value="04h00" />
-              <option value="05h00" />
-              <option value="06h00" />
-              <option value="07h00" />
-              <option value="08h00" />
-            </datalist>
-          </section>
-        )}
+        </form>
 
-      </form>
+        {/* Bouton Retour en haut */}
+        <button
+          type="button"
+          onClick={() => formTopRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          className="fixed bottom-6 right-6 w-12 h-12 bg-[#daa520] text-black rounded-full shadow-2xl flex items-center justify-center hover:bg-[#ffb700] transition-all active:scale-95 z-50 border-2 border-[#daa520]/30"
+          title="Retour en haut"
+        >
+          <ChevronUp size={24} />
+        </button>
 
-      {/* Bouton Retour en haut */}
-      <button 
-        type="button"
-        onClick={() => formTopRef.current?.scrollIntoView({ behavior: 'smooth' })}
-        className="fixed bottom-6 right-6 w-12 h-12 bg-[#daa520] text-black rounded-full shadow-2xl flex items-center justify-center hover:bg-[#ffb700] transition-all active:scale-95 z-50 border-2 border-[#daa520]/30"
-        title="Retour en haut"
-      >
-        <ChevronUp size={24} />
-      </button>
-
-    </div>
+      </div>
     );
   };
 
@@ -1689,7 +1695,7 @@ export default function App() {
 
   const renderConsultation = () => {
     if (!Array.isArray(interventions)) return <div className="text-white p-8">Erreur : Les données ne sont pas au bon format.</div>;
-    
+
     const displayedInterventions = (interventions || [])
       .filter((i: any) => {
         if (!i) return false;
@@ -1719,71 +1725,71 @@ export default function App() {
               <h1 className="text-2xl font-black uppercase tracking-tighter">Consultation des <span className="text-[#daa520]">bons</span></h1>
             </div>
             <div className="text-right">
-               <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Base de données</p>
+              <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Base de données</p>
             </div>
           </div>
         </header>
         <div className="p-8">
-        <p className="text-[10px] text-white/60 font-bold mb-2 italic uppercase tracking-wider">
-          Les interventions archivées ne sont plus modifiables
-        </p>
-        <div className="flex gap-2 mb-6 border-b border-slate-200 pb-4">
-          <button 
-            onClick={() => setConsultationTab('enCours')}
-            className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'enCours' ? 'bg-[#daa520] text-black shadow-lg shadow-[#daa520]/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-          >
-            En cours ({enCoursCount})
-          </button>
-          <button 
-            onClick={() => setConsultationTab('archivees')}
-            className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'archivees' ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-          >
-            Archivées ({archiveesCount})
-          </button>
-          <button 
-            onClick={() => setConsultationTab('enRetard')}
-            className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-all flex items-center justify-center gap-1 ${consultationTab === 'enRetard' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 scale-105 z-10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-          >
-            <ShieldCheck size={14} /> En retard ({enRetardCount})
-          </button>
-        </div>
+          <p className="text-[10px] text-white/60 font-bold mb-2 italic uppercase tracking-wider">
+            Les interventions archivées ne sont plus modifiables
+          </p>
+          <div className="flex gap-2 mb-6 border-b border-slate-200 pb-4">
+            <button
+              onClick={() => setConsultationTab('enCours')}
+              className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'enCours' ? 'bg-[#daa520] text-black shadow-lg shadow-[#daa520]/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              En cours ({enCoursCount})
+            </button>
+            <button
+              onClick={() => setConsultationTab('archivees')}
+              className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'archivees' ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              Archivées ({archiveesCount})
+            </button>
+            <button
+              onClick={() => setConsultationTab('enRetard')}
+              className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-all flex items-center justify-center gap-1 ${consultationTab === 'enRetard' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 scale-105 z-10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              <ShieldCheck size={14} /> En retard ({enRetardCount})
+            </button>
+          </div>
 
-        <div className="space-y-4">
-          {(displayedInterventions || []).map((i: any) => {
-            if (!i) return null;
-            return (
-            <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
-              <div className='flex justify-between items-center mb-2'>
-                <button 
-                  onClick={() => handleOpenSaisie(i)} 
-                  className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
-                >
-                  <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
-                    {i.numeroBon ? `Bon n°${i.numeroBon}` : 'Sans n°'} — {i.dateDemande ? i.dateDemande.split('-').reverse().join('/') : 'Date inconnue'}
-                    {isDateOlderThan30Days(i.dateDemande) && (
-                      <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard (+{getDaysElapsed(i.dateDemande)}j)
-                      </span>
-                    )}
+          <div className="space-y-4">
+            {(displayedInterventions || []).map((i: any) => {
+              if (!i) return null;
+              return (
+                <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
+                  <div className='flex justify-between items-center mb-2'>
+                    <button
+                      onClick={() => handleOpenSaisie(i)}
+                      className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
+                    >
+                      <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
+                        {i.numeroBon ? `Bon n°${i.numeroBon}` : 'Sans n°'} — {i.dateDemande ? i.dateDemande.split('-').reverse().join('/') : 'Date inconnue'}
+                        {isDateOlderThan30Days(i.dateDemande) && (
+                          <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
+                            En retard (+{getDaysElapsed(i.dateDemande)}j)
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                    <div className='flex gap-2'>
+                      <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
                   </div>
-                </button>
-                <div className='flex gap-2'>
-                  <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
-                    <Trash2 size={20} />
-                  </button>
                 </div>
-              </div>
-            </div>
-            );
-          })}
-          {displayedInterventions.length === 0 && (
-            <p className="text-slate-300 italic">
-              {consultationTab === 'enCours' 
-                ? "Aucune intervention active (non signée) enregistrée." 
-                : "Aucune intervention archivée (signée) pour le moment."}
-            </p>
-          )}
-        </div>
+              );
+            })}
+            {displayedInterventions.length === 0 && (
+              <p className="text-slate-300 italic">
+                {consultationTab === 'enCours'
+                  ? "Aucune intervention active (non signée) enregistrée."
+                  : "Aucune intervention archivée (signée) pour le moment."}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1798,7 +1804,7 @@ export default function App() {
     const filteredInterventions = (!searchQuery && !searchStartDate) ? [] : (interventions || []).filter((i: any) => {
       if (!i) return false;
       const matchBon = !searchQuery || (i.numeroBon && i.numeroBon.toLowerCase().includes(searchQuery.toLowerCase()));
-      
+
       let matchDate = true;
       if (searchStartDate || searchEndDate) {
         const d = i.dateSaisie;
@@ -1822,84 +1828,84 @@ export default function App() {
               <h1 className="text-2xl font-black uppercase tracking-tighter">Recherche de <span className="text-[#daa520]">bons</span></h1>
             </div>
             <div className="text-right">
-               <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Base de données</p>
+              <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Base de données</p>
             </div>
           </div>
         </header>
         <div className="p-8">
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="md:col-span-2">
-            <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Recherche par N° de bon</label>
-            <input 
-              type="text" 
-              list="bon-list"
-              placeholder="Entrez ou sélectionnez un N° de bon..." 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
-              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold"
-            />
-            <datalist id="bon-list">
-              {uniqueBons.map((bon: any) => (
-                <option key={bon} value={bon} />
-              ))}
-            </datalist>
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Date saisie (À partir du)</label>
-            <input 
-              type="date" 
-              value={searchStartDate} 
-              onChange={(e) => setSearchStartDate(e.target.value)} 
-              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Date saisie (Jusqu'au)</label>
-            <input 
-              type="date" 
-              value={searchEndDate} 
-              onChange={(e) => setSearchEndDate(e.target.value)} 
-              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white"
-            />
-          </div>
-        </div>
 
-        <div className="space-y-4">
-          {isSearching && filteredInterventions.length === 0 && (
-             <p className="text-slate-300 italic">Aucune intervention trouvée pour ces critères.</p>
-          )}
-          {(!isSearching) && (
-            <p className="text-slate-300 italic">Veuillez entrer un numéro de bon ou une plage de dates pour lancer la recherche.</p>
-          )}
-          {isSearching && (filteredInterventions || []).map((i: any) => {
-            if (!i) return null;
-            return (
-            <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
-              <div className='flex justify-between items-center mb-2'>
-                <button 
-                  onClick={() => handleOpenSaisie(i)} 
-                  className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
-                >
-                  <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
-                    {i.numeroBon ? `Bon n°${i.numeroBon}` : 'Sans n°'} — {i.dateDemande ? i.dateDemande.split('-').reverse().join('/') : 'Date inconnue'}
-                    {isDateOlderThan30Days(i.dateDemande) && (
-                      <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard (+{getDaysElapsed(i.dateDemande)}j)
-                      </span>
-                    )}
-                  </div>
-                </button>
-                <div className='flex gap-2'>
-                  <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
-                    <Trash2 size={20} />
-                  </button>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Recherche par N° de bon</label>
+              <input
+                type="text"
+                list="bon-list"
+                placeholder="Entrez ou sélectionnez un N° de bon..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold"
+              />
+              <datalist id="bon-list">
+                {uniqueBons.map((bon: any) => (
+                  <option key={bon} value={bon} />
+                ))}
+              </datalist>
             </div>
-            );
-          })}
-        </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Date saisie (À partir du)</label>
+              <input
+                type="date"
+                value={searchStartDate}
+                onChange={(e) => setSearchStartDate(e.target.value)}
+                className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Date saisie (Jusqu'au)</label>
+              <input
+                type="date"
+                value={searchEndDate}
+                onChange={(e) => setSearchEndDate(e.target.value)}
+                className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {isSearching && filteredInterventions.length === 0 && (
+              <p className="text-slate-300 italic">Aucune intervention trouvée pour ces critères.</p>
+            )}
+            {(!isSearching) && (
+              <p className="text-slate-300 italic">Veuillez entrer un numéro de bon ou une plage de dates pour lancer la recherche.</p>
+            )}
+            {isSearching && (filteredInterventions || []).map((i: any) => {
+              if (!i) return null;
+              return (
+                <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
+                  <div className='flex justify-between items-center mb-2'>
+                    <button
+                      onClick={() => handleOpenSaisie(i)}
+                      className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
+                    >
+                      <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
+                        {i.numeroBon ? `Bon n°${i.numeroBon}` : 'Sans n°'} — {i.dateDemande ? i.dateDemande.split('-').reverse().join('/') : 'Date inconnue'}
+                        {isDateOlderThan30Days(i.dateDemande) && (
+                          <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
+                            En retard (+{getDaysElapsed(i.dateDemande)}j)
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                    <div className='flex gap-2'>
+                      <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -1933,7 +1939,7 @@ export default function App() {
               <h1 className="text-2xl font-black uppercase tracking-tighter">Tableau de <span className="text-[#daa520]">bord</span></h1>
             </div>
             <div className="text-right">
-               <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Reporting Analytique</p>
+              <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Reporting Analytique</p>
             </div>
           </div>
         </header>
@@ -1963,8 +1969,8 @@ export default function App() {
               {(statsFilter === 'year' || statsFilter === 'month') && (
                 <div>
                   <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Choisir l'année</label>
-                  <select 
-                    value={statsYear} 
+                  <select
+                    value={statsYear}
                     onChange={(e) => setStatsYear(e.target.value)}
                     className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-bold"
                   >
@@ -1976,13 +1982,13 @@ export default function App() {
               {statsFilter === 'month' && (
                 <div>
                   <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Choisir le mois</label>
-                  <select 
-                    value={statsMonth} 
+                  <select
+                    value={statsMonth}
                     onChange={(e) => setStatsMonth(e.target.value)}
                     className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-bold"
                   >
                     {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(m => (
-                      <option key={m} value={m}>{new Date(2000, parseInt(m)-1).toLocaleString('fr-FR', { month: 'long' }).toUpperCase()}</option>
+                      <option key={m} value={m}>{new Date(2000, parseInt(m) - 1).toLocaleString('fr-FR', { month: 'long' }).toUpperCase()}</option>
                     ))}
                   </select>
                 </div>
@@ -2002,33 +2008,33 @@ export default function App() {
             </div>
           </div>
 
-        <div className="mb-6 bg-[#daa520] p-4 rounded-lg shadow-lg border-l-8 border-[#b8860b] text-center">
-          {(() => {
-            const grandTotalMinutes = filtered.reduce((acc: number, i: any) => {
-              const itemMinutes = (i.passages || []).reduce((pAcc: number, p: any) => pAcc + parseDuration(p.tempsPasse || ""), 0);
-              return acc + itemMinutes;
-            }, 0);
-            const totalDuration = formatDuration(grandTotalMinutes);
-            
-            return (
-              <h2 className="text-xl font-black text-black uppercase tracking-tighter">
-                {statsFilter === 'year' && `TOTAL ${statsYear} : ${filtered.length} (${totalDuration})`}
-                {statsFilter === 'month' && `TOTAL ${new Date(2000, parseInt(statsMonth)-1).toLocaleString('fr-FR', { month: 'long' })} ${statsYear} : ${filtered.length} (${totalDuration})`}
-                {statsFilter === 'range' && (() => {
-                  if (!statsStart || !statsEnd) return `TOTAL DU ? AU ? : ${filtered.length} (${totalDuration})`;
-                  const d1 = new Date(statsStart);
-                  const d2 = new Date(statsEnd);
-                  const monthNames = ["JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE"];
-                  
-                  if (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth()) {
-                    return `TOTAL DU ${String(d1.getDate()).padStart(2, '0')} AU ${String(d2.getDate()).padStart(2, '0')} ${monthNames[d1.getMonth()]} ${d1.getFullYear()} : ${filtered.length} (${totalDuration})`;
-                  }
-                  return `TOTAL DU ${statsStart.split('-').reverse().join('/')} AU ${statsEnd.split('-').reverse().join('/')} : ${filtered.length} (${totalDuration})`;
-                })()}
-              </h2>
-            );
-          })()}
-        </div>
+          <div className="mb-6 bg-[#daa520] p-4 rounded-lg shadow-lg border-l-8 border-[#b8860b] text-center">
+            {(() => {
+              const grandTotalMinutes = filtered.reduce((acc: number, i: any) => {
+                const itemMinutes = (i.passages || []).reduce((pAcc: number, p: any) => pAcc + parseDuration(p.tempsPasse || ""), 0);
+                return acc + itemMinutes;
+              }, 0);
+              const totalDuration = formatDuration(grandTotalMinutes);
+
+              return (
+                <h2 className="text-xl font-black text-black uppercase tracking-tighter">
+                  {statsFilter === 'year' && `TOTAL ${statsYear} : ${filtered.length} (${totalDuration})`}
+                  {statsFilter === 'month' && `TOTAL ${new Date(2000, parseInt(statsMonth) - 1).toLocaleString('fr-FR', { month: 'long' })} ${statsYear} : ${filtered.length} (${totalDuration})`}
+                  {statsFilter === 'range' && (() => {
+                    if (!statsStart || !statsEnd) return `TOTAL DU ? AU ? : ${filtered.length} (${totalDuration})`;
+                    const d1 = new Date(statsStart);
+                    const d2 = new Date(statsEnd);
+                    const monthNames = ["JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE"];
+
+                    if (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth()) {
+                      return `TOTAL DU ${String(d1.getDate()).padStart(2, '0')} AU ${String(d2.getDate()).padStart(2, '0')} ${monthNames[d1.getMonth()]} ${d1.getFullYear()} : ${filtered.length} (${totalDuration})`;
+                    }
+                    return `TOTAL DU ${statsStart.split('-').reverse().join('/')} AU ${statsEnd.split('-').reverse().join('/')} : ${filtered.length} (${totalDuration})`;
+                  })()}
+                </h2>
+              );
+            })()}
+          </div>
 
           <div className="overflow-x-auto bg-white rounded-xl shadow-xl">
             <table className="w-full text-left border-collapse">
@@ -2049,7 +2055,7 @@ export default function App() {
                   return (
                     <tr key={i.id} className={`hover:bg-slate-50 transition-colors ${isLate ? 'bg-red-50' : ''}`}>
                       <td className="px-4 py-4">
-                        <button 
+                        <button
                           onClick={() => handleOpenSaisie(i)}
                           className="text-[#daa520] hover:text-amber-700 font-black underline decoration-2 underline-offset-4"
                         >
@@ -2104,19 +2110,18 @@ export default function App() {
           <div className="w-20 h-20 bg-[#daa520]/10 rounded-full flex items-center justify-center mb-6 border border-[#daa520]/30 shadow-[0_0_15px_rgba(218,165,32,0.2)]">
             <Lock className="w-10 h-10 text-[#daa520]" />
           </div>
-          
+
           <h1 className="text-2xl font-bold mb-2 tracking-tight">Accès Sécurisé</h1>
           <p className="text-slate-400 mb-8 text-center text-sm">Veuillez entrer votre code de protection pour accéder à l'application de gestion des interventions.</p>
-          
-          <div className="flex gap-3 mb-8">
+
+          <div className={`flex gap-3 mb-8 p-4 rounded-xl transition-all ${!pinInput ? 'bg-red-500/10 border-2 border-red-500/50' : 'bg-black/20 border-2 border-white/5'}`}>
             {[...Array(6)].map((_, i) => (
-              <div 
+              <div
                 key={i}
-                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
-                  pinInput.length > i 
-                    ? 'bg-[#daa520] border-[#daa520] scale-110 shadow-[0_0_8px_rgba(218,165,32,0.5)]' 
+                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${pinInput.length > i
+                    ? 'bg-[#daa520] border-[#daa520] scale-110 shadow-[0_0_8px_rgba(218,165,32,0.5)]'
                     : 'border-slate-600 bg-transparent'
-                } ${pinError ? 'bg-red-500 border-red-500 animate-shake' : ''}`}
+                  } ${pinError ? 'bg-red-500 border-red-500 animate-shake' : ''}`}
               />
             ))}
           </div>
@@ -2131,7 +2136,7 @@ export default function App() {
                 {num}
               </button>
             ))}
-            <button 
+            <button
               onClick={() => setPinInput("")}
               className="h-16 rounded-xl bg-slate-800/50 hover:bg-red-900/30 text-red-400 text-sm font-medium transition-colors border border-slate-700/50 flex items-center justify-center"
             >
@@ -2156,10 +2161,11 @@ export default function App() {
             <span>Système d'authentification matériel local</span>
           </div>
         </div>
-        
+
         <p className="mt-8 text-slate-600 text-xs">Gestion des Interventions - Maintenance Industrielle</p>
-        
-        <style dangerouslySetInnerHTML={{ __html: `
+
+        <style dangerouslySetInnerHTML={{
+          __html: `
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
@@ -2186,20 +2192,20 @@ export default function App() {
       {/* Notification Furtive (Toast) */}
       {notification && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[9999] animate-fade-in-up">
-          <div className={`px-6 py-3 rounded-full shadow-2xl border flex items-center gap-3 backdrop-blur-md ${
-            notification.type === 'success' 
-              ? 'bg-emerald-500/90 border-emerald-400 text-white' 
+          <div className={`px-6 py-3 rounded-full shadow-2xl border flex items-center gap-3 backdrop-blur-md ${notification.type === 'success'
+              ? 'bg-emerald-500/90 border-emerald-400 text-white'
               : notification.type === 'error'
-              ? 'bg-red-500/90 border-red-400 text-white'
-              : 'bg-slate-800/90 border-slate-700 text-white'
-          }`}>
+                ? 'bg-red-500/90 border-red-400 text-white'
+                : 'bg-slate-800/90 border-slate-700 text-white'
+            }`}>
             {notification.type === 'success' && <ShieldCheck className="w-5 h-5" />}
             <span className="font-bold tracking-wide">{notification.message}</span>
           </div>
         </div>
       )}
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes fadeInUp {
           from { opacity: 0; transform: translate(-50%, 20px); }
           to { opacity: 1; transform: translate(-50%, 0); }
