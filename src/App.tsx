@@ -1697,7 +1697,10 @@ export default function App() {
       if (consultationTab === 'enRetard') return !i.archived && isDateOlderThan30Days(i.dateDemande);
       return true;
     });
-    
+    const enCoursCount = interventions.filter((i: any) => !i.archived).length;
+    const archiveesCount = interventions.filter((i: any) => i.archived).length;
+    const enRetardCount = interventions.filter((i: any) => !i.archived && isDateOlderThan30Days(i.dateDemande)).length;
+
     return (
       <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
         <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b border-white/5 shadow-md">
@@ -1720,19 +1723,19 @@ export default function App() {
             onClick={() => setConsultationTab('enCours')}
             className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'enCours' ? 'bg-[#daa520] text-black shadow-lg shadow-[#daa520]/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
-            En cours
+            En cours ({enCoursCount})
           </button>
           <button 
             onClick={() => setConsultationTab('archivees')}
             className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'archivees' ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
-            Archivées
+            Archivées ({archiveesCount})
           </button>
           <button 
             onClick={() => setConsultationTab('enRetard')}
             className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-all flex items-center justify-center gap-1 ${consultationTab === 'enRetard' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 scale-105 z-10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
-            <ShieldCheck size={14} /> En retard
+            <ShieldCheck size={14} /> En retard ({enRetardCount})
           </button>
         </div>
 
