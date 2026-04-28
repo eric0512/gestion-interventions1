@@ -179,6 +179,28 @@ export default function App() {
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
   const [isInitializingSecurity, setIsInitializingSecurity] = useState(true);
+  const [timeSinceLastOpen, setTimeSinceLastOpen] = useState<string>("");
+
+  useEffect(() => {
+    const lastOpen = localStorage.getItem('app_last_opening');
+    const now = new Date().getTime();
+
+    if (lastOpen) {
+      const diff = now - parseInt(lastOpen);
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      let parts = [];
+      if (days > 0) parts.push(`${days}j`);
+      if (hours > 0 || days > 0) parts.push(`${hours}h`);
+      parts.push(`${seconds}s`);
+
+      setTimeSinceLastOpen(parts.join(' '));
+    }
+
+    localStorage.setItem('app_last_opening', now.toString());
+  }, []);
 
   useEffect(() => {
     const initSecurity = async () => {
@@ -2136,7 +2158,12 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-4 font-sans text-white">
-        <div className="w-full max-w-md bg-[#1e293b] rounded-2xl shadow-2xl border border-slate-700 p-8 flex flex-col items-center">
+        <div className="w-full max-w-md bg-[#1e293b] rounded-2xl shadow-2xl border border-slate-700 p-8 flex flex-col items-center relative">
+          {timeSinceLastOpen && (
+            <div className="absolute top-4 left-4 text-[10px] text-slate-500 font-medium tracking-tight">
+              Dernière ouverture : {timeSinceLastOpen}
+            </div>
+          )}
           <div className="w-20 h-20 bg-[#daa520]/10 rounded-full flex items-center justify-center mb-6 border border-[#daa520]/30 shadow-[0_0_15px_rgba(218,165,32,0.2)]">
             <Lock className="w-10 h-10 text-[#daa520]" />
           </div>
