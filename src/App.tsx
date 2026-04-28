@@ -1690,13 +1690,22 @@ export default function App() {
   const renderConsultation = () => {
     if (!Array.isArray(interventions)) return <div className="text-white p-8">Erreur : Les données ne sont pas au bon format.</div>;
     
-    const displayedInterventions = (interventions || []).filter((i: any) => {
-      if (!i) return false;
-      if (consultationTab === 'enCours') return !i.archived;
-      if (consultationTab === 'archivees') return i.archived;
-      if (consultationTab === 'enRetard') return !i.archived && isDateOlderThan30Days(i.dateDemande);
-      return true;
-    });
+    const displayedInterventions = (interventions || [])
+      .filter((i: any) => {
+        if (!i) return false;
+        if (consultationTab === 'enCours') return !i.archived;
+        if (consultationTab === 'archivees') return i.archived;
+        if (consultationTab === 'enRetard') return !i.archived && isDateOlderThan30Days(i.dateDemande);
+        return true;
+      })
+      .sort((a: any, b: any) => {
+        const dateA = a.dateDemande || a.dateSaisie || "";
+        const dateB = b.dateDemande || b.dateSaisie || "";
+        if (consultationTab === 'archivees') {
+          return dateB.localeCompare(dateA); // Plus récent en premier pour les archives
+        }
+        return dateA.localeCompare(dateB); // Plus ancien en premier pour le reste
+      });
     const enCoursCount = interventions.filter((i: any) => !i.archived).length;
     const archiveesCount = interventions.filter((i: any) => i.archived).length;
     const enRetardCount = interventions.filter((i: any) => !i.archived && isDateOlderThan30Days(i.dateDemande)).length;
