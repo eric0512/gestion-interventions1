@@ -437,7 +437,8 @@ export default function App() {
 
       // Logique de sauvegarde automatique sans confirmation pour le champ "État / Suite"
       if (field === 'raisonNouveauPassage' && value) {
-        const isClosingState = value === 'Terminé' || value === "Intervention d'une autre entreprise nécessaire";
+        const choices = value.split(', ');
+        const isClosingState = choices.includes('Terminé') || choices.includes("Intervention d'une autre entreprise nécessaire");
 
         if (isClosingState) {
           const missing = getMissingFields(prev, currentPassage);
@@ -1622,25 +1623,45 @@ export default function App() {
 
                     <div className="pt-4 border-t border-slate-200 space-y-4">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-3 flex items-center gap-2">
                           État / Suite de l'intervention <span className="text-red-500">*</span>
                         </label>
-                        <select
-                          value={passage.raisonNouveauPassage || ""}
-                          onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)}
-                          className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 font-bold ${!passage.raisonNouveauPassage ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`}
-                        >
-                          <option value="">Sélectionner l'état</option>
+                        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 rounded border transition-all ${!passage.raisonNouveauPassage ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50/50'}`}>
                           {[
                             "Autre passage nécessaire",
                             "Demande de devis",
                             "Intervention d'une autre entreprise nécessaire",
                             "Pièce(s) manquante(s)",
                             "Terminé"
-                          ].sort((a, b) => a.localeCompare(b, 'fr')).map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
+                          ].sort((a, b) => a.localeCompare(b, 'fr')).map(opt => {
+                            const isChecked = passage.raisonNouveauPassage?.split(', ').includes(opt);
+                            return (
+                              <label 
+                                key={opt} 
+                                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all border ${isChecked ? 'bg-[#daa520]/10 border-[#daa520] shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'}`}
+                              >
+                                <input 
+                                  type="checkbox" 
+                                  checked={isChecked}
+                                  disabled={isArchived}
+                                  onChange={(e) => {
+                                    let currentChoices = passage.raisonNouveauPassage ? passage.raisonNouveauPassage.split(', ') : [];
+                                    if (e.target.checked) {
+                                      if (!currentChoices.includes(opt)) currentChoices.push(opt);
+                                    } else {
+                                      currentChoices = currentChoices.filter(c => c !== opt);
+                                    }
+                                    handlePassageChange(passage.id, 'raisonNouveauPassage', currentChoices.sort().join(', '));
+                                  }}
+                                  className="w-4 h-4 rounded border-slate-300 text-[#daa520] focus:ring-[#daa520] cursor-pointer"
+                                />
+                                <span className={`text-[10px] font-black uppercase tracking-tight ${isChecked ? 'text-slate-900' : 'text-slate-600'}`}>
+                                  {opt}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
 
