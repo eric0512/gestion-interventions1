@@ -626,9 +626,35 @@ export default function App() {
         throw new Error("L'image est vraiment trop lourde (plus de 25 Mo).");
       }
 
+      setExtractStep("Orientation...");
+      // Forcer le mode portrait si l'image est en paysage
+      let portraitFile = file;
+      try {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+        URL.revokeObjectURL(img.src);
+
+        if (img.width > img.height) {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.height;
+          canvas.height = img.width;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(img, -img.width / 2, -img.height / 2);
+            const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+            if (blob) portraitFile = new File([blob], file.name, { type: 'image/jpeg' });
+          }
+        }
+      } catch (e) {
+        console.warn("Erreur lors de la rotation portrait:", e);
+      }
+
       setExtractStep("Compression...");
       // Wrap compression in a safe try/catch
-      let processedFile = file;
+      let processedFile = portraitFile;
       try {
         const options = {
           maxSizeMB: 1, // Compress to ~1MB (perfect for AI without losing readability)
@@ -636,7 +662,7 @@ export default function App() {
           useWebWorker: true, // Prevents locking the UI thread
           fileType: "image/jpeg"
         };
-        processedFile = await imageCompression(file, options);
+        processedFile = await imageCompression(portraitFile, options);
       } catch (err) {
         console.warn("Échec de la compression, utilisation de l'image originale:", err);
       }
@@ -828,16 +854,40 @@ export default function App() {
     try {
       const files = Array.from(e.target.files) as File[];
       const newPhotos: string[] = [];
-      
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        // Forcer le mode portrait si l'image est en paysage
+        let portraitFile = file;
+        try {
+          const img = new Image();
+          img.src = URL.createObjectURL(file);
+          await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+          URL.revokeObjectURL(img.src);
+
+          if (img.width > img.height) {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.height;
+            canvas.height = img.width;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.translate(canvas.width / 2, canvas.height / 2);
+              ctx.rotate(Math.PI / 2);
+              ctx.drawImage(img, -img.width / 2, -img.height / 2);
+              const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+              if (blob) portraitFile = new File([blob], file.name, { type: 'image/jpeg' });
+            }
+          }
+        } catch (e) {
+          console.warn("Erreur lors de la rotation portrait (devis):", e);
+        }
+
         const options = {
           maxSizeMB: 0.7,
           maxWidthOrHeight: 1280,
           useWebWorker: true,
           fileType: "image/jpeg"
         };
-        const compressedFile = await imageCompression(file, options);
+        const compressedFile = await imageCompression(portraitFile, options);
         
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
