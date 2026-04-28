@@ -1645,9 +1645,18 @@ export default function App() {
                                   checked={isChecked}
                                   disabled={isArchived}
                                   onChange={(e) => {
+                                    const isClosing = opt === 'Terminé' || opt === "Intervention d'une autre entreprise nécessaire";
                                     let currentChoices = passage.raisonNouveauPassage ? passage.raisonNouveauPassage.split(', ') : [];
+                                    
                                     if (e.target.checked) {
-                                      if (!currentChoices.includes(opt)) currentChoices.push(opt);
+                                      if (isClosing) {
+                                        // Si on coche un état de clôture, on vide tout le reste
+                                        currentChoices = [opt];
+                                      } else {
+                                        // Si on coche un état normal, on retire les états de clôture
+                                        currentChoices = currentChoices.filter(c => c !== 'Terminé' && c !== "Intervention d'une autre entreprise nécessaire");
+                                        if (!currentChoices.includes(opt)) currentChoices.push(opt);
+                                      }
                                     } else {
                                       currentChoices = currentChoices.filter(c => c !== opt);
                                     }
