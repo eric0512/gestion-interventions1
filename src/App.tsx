@@ -521,18 +521,18 @@ export default function App() {
       const dataToValidate = actualData || formData;
       console.log("Starting handleSave with data:", dataToValidate);
 
-      // Validation restrictive pour la saisie des bons (uniquement les 3 champs demandés)
-      if (!dataToValidate.dateSaisie) {
-        alert("Le champ 'Colmar le' est obligatoire.");
-        return;
-      }
-      if (!dataToValidate.numeroBon) {
-        alert("Le champ 'N° de bon' est obligatoire.");
-        return;
-      }
-      if (!dataToValidate.dateDemande) {
-        alert("Le champ 'Date de demande' est obligatoire.");
-        return;
+      // Validation restrictive : Les 3 champs principaux + les passages
+      if (!dataToValidate.dateSaisie) { alert("Le champ 'Colmar le' est obligatoire."); return; }
+      if (!dataToValidate.numeroBon) { alert("Le champ 'N° de bon' est obligatoire."); return; }
+      if (!dataToValidate.dateDemande) { alert("Le champ 'Date de demande' est obligatoire."); return; }
+
+      // Validation des passages
+      const passages = dataToValidate.passages || [];
+      for (let i = 0; i < passages.length; i++) {
+        const p = passages[i];
+        if (!p.dateExecution) { alert(`Intervention #${i + 1} : La date est obligatoire.`); return; }
+        if (!p.tempsPasse) { alert(`Intervention #${i + 1} : Le temps passé est obligatoire.`); return; }
+        if (!p.raisonNouveauPassage) { alert(`Intervention #${i + 1} : L'état est obligatoire.`); return; }
       }
 
       let dataToSave = { ...dataToValidate };
@@ -1569,7 +1569,7 @@ export default function App() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-300 uppercase">
-                          Date d'intervention
+                          Date d'intervention <span className="text-red-500">*</span>
                         </label>
                         <input 
                           type="date" 
@@ -1578,12 +1578,12 @@ export default function App() {
                           min={formData.dateSaisie} 
                           onChange={(e) => handlePassageChange(passage.id, 'dateExecution', e.target.value)} 
                           onFocus={() => { if (!passage.dateExecution && formData.dateSaisie) handlePassageChange(passage.id, 'dateExecution', formData.dateSaisie) }} 
-                          className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white disabled:opacity-75" 
+                          className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 disabled:opacity-75 ${!passage.dateExecution ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`} 
                         />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-slate-300 uppercase">
-                          Temps passé
+                          Temps passé <span className="text-red-500">*</span>
                         </label>
                         <input 
                           list="temps-passe-list" 
@@ -1592,7 +1592,7 @@ export default function App() {
                           onChange={(e) => handlePassageChange(passage.id, 'tempsPasse', e.target.value)} 
                           type="text" 
                           placeholder="ex: 02h30" 
-                          className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold disabled:opacity-75" 
+                          className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 font-bold disabled:opacity-75 ${!passage.tempsPasse ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`} 
                         />
                       </div>
                     </div>
@@ -1623,12 +1623,12 @@ export default function App() {
                     <div className="pt-4 border-t border-slate-200 space-y-4">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">
-                          État / Suite de l'intervention
+                          État / Suite de l'intervention <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={passage.raisonNouveauPassage || ""}
                           onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)}
-                          className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold"
+                          className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 font-bold ${!passage.raisonNouveauPassage ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`}
                         >
                           <option value="">Sélectionner l'état</option>
                           {[
