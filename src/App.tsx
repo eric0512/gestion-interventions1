@@ -240,7 +240,7 @@ export default function App() {
 
   // --- États pour l'alerte des bons en retard ---
   const [showLateModal, setShowLateModal] = useState(false);
-  const [hasShownLateModal, setHasShownLateModal] = useState(false);
+  const [hasShownLateModal, setHasShownLateModal] = useState(true);
 
   useEffect(() => {
     // On n'affiche le modal que si on est authentifié et que les interventions sont chargées
