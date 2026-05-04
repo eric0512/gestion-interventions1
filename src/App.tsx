@@ -683,6 +683,22 @@ export default function App() {
       }
 
       setExtractStep("Sauvegarde image...");
+      
+      // Suppression de l'ancienne photo si elle existe
+      if (formData.photo_url) {
+        try {
+          const oldUrl = formData.photo_url;
+          if (oldUrl.includes('/interventions-photos/')) {
+            const oldPath = oldUrl.split('/interventions-photos/')[1];
+            if (oldPath) {
+              await supabase.storage.from('interventions-photos').remove([oldPath]);
+            }
+          }
+        } catch (err) {
+          console.error("Erreur lors de la suppression de l'ancienne photo:", err);
+        }
+      }
+
       const photoUrl = await uploadImage(processedFile);
       if (photoUrl) {
         setFormData(prev => ({ ...prev, photo_url: photoUrl }));
@@ -991,7 +1007,32 @@ export default function App() {
           await supabase.storage.from('devis').remove([filePath]);
         }
       } catch (err) {
-        console.error("Erreur lors de la suppression du fichier storage:", err);
+        console.error("Erreur lors de la suppression du fichier storage (devis):", err);
+      }
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!window.confirm("Voulez-vous vraiment supprimer la photo du bon ?")) return;
+
+    const oldUrl = formData.photo_url;
+    const updatedData = { ...formData, photo_url: null };
+    setFormData(updatedData);
+
+    if (currentId) {
+      syncIntervention({ ...updatedData, id: currentId });
+    }
+
+    // Tentative de suppression du fichier physique dans Storage
+    if (oldUrl) {
+      try {
+        const urlParts = oldUrl.split('/interventions-photos/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          await supabase.storage.from('interventions-photos').remove([filePath]);
+        }
+      } catch (err) {
+        console.error("Erreur lors de la suppression du fichier storage (photo):", err);
       }
     }
   };
@@ -1368,13 +1409,25 @@ export default function App() {
                       className={`flex-grow border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 font-bold disabled:opacity-75 ${!formData.numeroBon ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`} 
                     />
                     {formData.photo_url && (
-                      <button
-                        type="button"
-                        onClick={() => window.open(formData.photo_url, '_blank')}
-                        className="bg-[#daa520] hover:bg-[#ffb700] text-black text-[10px] font-black px-3 py-1.5 rounded uppercase flex items-center gap-1 transition-all shadow-sm"
-                      >
-                        <Camera size={14} /> Bons Photos
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => window.open(formData.photo_url, '_blank')}
+                          className="bg-[#daa520] hover:bg-[#ffb700] text-black text-[10px] font-black px-3 py-1.5 rounded uppercase flex items-center gap-1 transition-all shadow-sm"
+                        >
+                          <Camera size={14} /> Bons Photos
+                        </button>
+                        {!isArchived && (
+                          <button
+                            type="button"
+                            onClick={removePhoto}
+                            className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                            title="Supprimer la photo"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div></div>
@@ -1730,14 +1783,42 @@ export default function App() {
   };
 
   const deleteIntervention = async (id: string) => {
-    if (window.confirm("Voulez-vous vraiment supprimer cette intervention ?")) {
+    if (window.confirm("Voulez-vous vraiment supprimer cette intervention ? Toutes les données, y compris les photos et devis associés, seront définitivement supprimées.")) {
+      const itemToDelete = interventions.find(i => i.id === id);
+      
       setInterventions(interventions.filter((i: any) => i.id !== id));
       if (import.meta.env.VITE_SUPABASE_URL) {
         setSyncStatus('syncing');
         try {
+          // 1. Suppression des fichiers de stockage
+          if (itemToDelete) {
+            // Photo du bon
+            if (itemToDelete.photo_url) {
+              try {
+                const parts = itemToDelete.photo_url.split('/interventions-photos/');
+                if (parts.length > 1) {
+                  await supabase.storage.from('interventions-photos').remove([parts[1]]);
+                }
+              } catch (e) { console.error("Erreur suppression photo storage:", e); }
+            }
+            
+            // Devis PDF
+            if (itemToDelete.urlDevis) {
+              try {
+                const parts = itemToDelete.urlDevis.split('/devis/');
+                if (parts.length > 1) {
+                  await supabase.storage.from('devis').remove([parts[1]]);
+                }
+              } catch (e) { console.error("Erreur suppression devis storage:", e); }
+            }
+          }
+
+          // 2. Suppression de l'entrée en base
           await supabase.from('interventions').delete().eq('id', id);
           setSyncStatus('synced');
+          showNotification("Intervention supprimée avec succès", "success");
         } catch (e) {
+          console.error("Erreur lors de la suppression complète:", e);
           setSyncStatus('error');
         }
       }
