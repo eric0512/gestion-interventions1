@@ -1891,8 +1891,8 @@ export default function App() {
             {(displayedInterventions || []).map((i: any) => {
               if (!i) return null;
               return (
-                <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
-                  <div className='flex justify-between items-center mb-2'>
+                <div key={i.id} className={`w-full py-2 px-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
+                  <div className='flex justify-between items-center'>
                     <button
                       onClick={() => handleOpenSaisie(i)}
                       className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
@@ -2014,8 +2014,8 @@ export default function App() {
             {isSearching && (filteredInterventions || []).map((i: any) => {
               if (!i) return null;
               return (
-                <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
-                  <div className='flex justify-between items-center mb-2'>
+                <div key={i.id} className={`w-full py-2 px-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
+                  <div className='flex justify-between items-center'>
                     <button
                       onClick={() => handleOpenSaisie(i)}
                       className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
