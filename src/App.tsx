@@ -81,6 +81,9 @@ export default function App() {
   const [view, setView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche' | 'stats'>(() => {
     return (sessionStorage.getItem('app_view') as any) || 'menu';
   });
+  const [previousView, setPreviousView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche' | 'stats'>(() => {
+    return (sessionStorage.getItem('app_previous_view') as any) || 'menu';
+  });
   const [consultationTab, setConsultationTab] = useState<'enCours' | 'archivees' | 'enRetard'>('enCours');
   const [searchQuery, setSearchQuery] = useState("");
   const [searchStartDate, setSearchStartDate] = useState("");
@@ -345,6 +348,10 @@ export default function App() {
   useEffect(() => {
     sessionStorage.setItem('app_view', view);
   }, [view]);
+
+  useEffect(() => {
+    sessionStorage.setItem('app_previous_view', previousView);
+  }, [previousView]);
 
   useEffect(() => {
     sessionStorage.setItem('app_formData', JSON.stringify(formData));
@@ -1103,6 +1110,7 @@ export default function App() {
       });
       setCurrentId(null);
     }
+    setPreviousView(view);
     setView('saisie');
   };
 
@@ -1240,7 +1248,7 @@ export default function App() {
             </div>
           </button>
           <button
-            onClick={() => setView('consultation')}
+            onClick={() => { setPreviousView('menu'); setView('consultation'); }}
             className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
           >
             <div className="flex items-center gap-4 px-6 py-4 w-full">
@@ -1259,6 +1267,7 @@ export default function App() {
               setSearchQuery("");
               setSearchStartDate("");
               setSearchEndDate(getTodayFormatted());
+              setPreviousView('menu');
               setView('recherche');
             }}
             className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
@@ -1275,7 +1284,7 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => setView('stats')}
+            onClick={() => { setPreviousView('menu'); setView('stats'); }}
             className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
           >
             <div className="flex items-center gap-4 px-6 py-4 w-full">
@@ -1325,7 +1334,7 @@ export default function App() {
         <div ref={formTopRef} className="absolute -top-20" />
         <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b border-white/5 shadow-md">
           <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
-            <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm transition-colors">← MENU</button>
+            <button onClick={() => setView(previousView)} className="text-slate-400 hover:text-[#daa520] font-bold text-sm transition-colors uppercase">← Précédent</button>
             <div>
               <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">
                 {isArchived ? "Bon archivé" : (currentId ? "Saisie intervention" : "Saisie des bons")}
@@ -1854,7 +1863,7 @@ export default function App() {
         <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b border-white/5 shadow-md">
           <div className="flex justify-between items-center">
             <div>
-              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block uppercase">← Précédent</button>
               <h1 className="text-2xl font-black uppercase tracking-tighter">Consultation des <span className="text-[#daa520]">bons</span></h1>
             </div>
             <div className="text-right">
@@ -1957,7 +1966,7 @@ export default function App() {
         <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b border-white/5 shadow-md">
           <div className="flex justify-between items-center">
             <div>
-              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block uppercase">← Précédent</button>
               <h1 className="text-2xl font-black uppercase tracking-tighter">Recherche de <span className="text-[#daa520]">bons</span></h1>
             </div>
             <div className="text-right">
@@ -2068,7 +2077,7 @@ export default function App() {
         <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b border-white/5 shadow-md">
           <div className="flex justify-between items-center">
             <div>
-              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block uppercase">← Précédent</button>
               <h1 className="text-2xl font-black uppercase tracking-tighter">Tableau de <span className="text-[#daa520]">bord</span></h1>
             </div>
             <div className="text-right">
