@@ -278,14 +278,7 @@ export default function App() {
     }
   }, [isAuthenticated, interventions, hasShownLateModal]);
 
-  useEffect(() => {
-    if (view === 'saisie') {
-      // Un petit délai pour s'assurer que le DOM est prêt
-      setTimeout(() => {
-        passagesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }
-  }, [view]);
+
 
   const fetchInterventions = async () => {
     if (!import.meta.env.VITE_SUPABASE_URL) {
@@ -556,13 +549,15 @@ export default function App() {
       if (!dataToValidate.numeroBon) { alert("Le champ 'N° de bon' est obligatoire."); return; }
       if (!dataToValidate.dateDemande) { alert("Le champ 'Date de demande' est obligatoire."); return; }
 
-      // Validation des passages
+      // Validation des passages (uniquement en modification pour laisser la saisie initiale libre)
       const passages = dataToValidate.passages || [];
-      for (let i = 0; i < passages.length; i++) {
-        const p = passages[i];
-        if (!p.dateExecution) { alert(`Intervention #${i + 1} : La date est obligatoire.`); return; }
-        if (!p.tempsPasse) { alert(`Intervention #${i + 1} : Le temps passé est obligatoire.`); return; }
-        if (!p.raisonNouveauPassage) { alert(`Intervention #${i + 1} : L'état est obligatoire.`); return; }
+      if (currentId) {
+        for (let i = 0; i < passages.length; i++) {
+          const p = passages[i];
+          if (!p.dateExecution) { alert(`Intervention #${i + 1} : La date est obligatoire.`); return; }
+          if (!p.tempsPasse) { alert(`Intervention #${i + 1} : Le temps passé est obligatoire.`); return; }
+          if (!p.raisonNouveauPassage) { alert(`Intervention #${i + 1} : L'état est obligatoire.`); return; }
+        }
       }
 
       let dataToSave = { ...dataToValidate };
@@ -1633,8 +1628,7 @@ export default function App() {
             )}
           </div>
 
-          {/* On affiche toujours les passages pour permettre la saisie obligatoire de la date/temps/état */}
-          {true && (
+          {currentId && (
             <section ref={passagesRef} className="border-t border-slate-200 pt-8 mt-8 scroll-mt-32">
               <div className="flex justify-between items-center border-b-2 border-[#daa520] pb-1 mb-3">
                 <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider">Retour de fiche / Passages</h3>
