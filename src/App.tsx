@@ -126,7 +126,7 @@ export default function App() {
       archived: false,
       passages: [{
         id: Date.now().toString(),
-        dateExecution: "",
+        dateExecution: getTodayFormatted(),
         travauxRealises: "",
         tempsPasse: "",
         nomIntervenant: "Christophe Meyer",
@@ -1099,7 +1099,7 @@ export default function App() {
         archived: false,
         passages: [{
           id: Date.now().toString(),
-          dateExecution: "",
+          dateExecution: getTodayFormatted(),
           travauxRealises: "",
           tempsPasse: "",
           nomIntervenant: "Christophe Meyer",
@@ -1633,7 +1633,8 @@ export default function App() {
             )}
           </div>
 
-          {currentId && (
+          {/* On affiche toujours les passages pour permettre la saisie obligatoire de la date/temps/état */}
+          {true && (
             <section ref={passagesRef} className="border-t border-slate-200 pt-8 mt-8 scroll-mt-32">
               <div className="flex justify-between items-center border-b-2 border-[#daa520] pb-1 mb-3">
                 <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider">Retour de fiche / Passages</h3>
