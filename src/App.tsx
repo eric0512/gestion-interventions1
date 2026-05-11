@@ -278,8 +278,14 @@ export default function App() {
     }
   }, [isAuthenticated, interventions, hasShownLateModal]);
 
-
-
+  useEffect(() => {
+    if (view === 'saisie' && currentId) {
+      // Un petit délai pour s'assurer que le DOM est prêt (surtout la section conditionnelle)
+      setTimeout(() => {
+        passagesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, [view, currentId]);
   const fetchInterventions = async () => {
     if (!import.meta.env.VITE_SUPABASE_URL) {
       setSyncStatus('offline');
