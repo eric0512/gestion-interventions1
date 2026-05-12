@@ -1108,7 +1108,9 @@ export default function App() {
       });
       setCurrentId(null);
     }
-    setPreviousView(view);
+    if (view !== 'saisie') {
+      setPreviousView(view);
+    }
     setView('saisie');
   };
 
