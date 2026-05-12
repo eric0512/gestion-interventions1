@@ -266,6 +266,7 @@ export default function App() {
   // --- États pour l'alerte des bons en retard ---
   const [showLateModal, setShowLateModal] = useState(false);
   const [hasShownLateModal, setHasShownLateModal] = useState(true);
+  const [showPostSaveModal, setShowPostSaveModal] = useState(false);
 
   useEffect(() => {
     // On n'affiche le modal que si on est authentifié et que les interventions sont chargées
@@ -433,7 +434,7 @@ export default function App() {
         const wasEmpty = !formData[name] || formData[name].trim() === "";
 
         if (othersComplete && wasEmpty) {
-          handleSave(nextData);
+          handleSave(nextData, true);
         }
       }
     }
@@ -543,7 +544,7 @@ export default function App() {
     }));
   };
 
-  const handleSave = async (dataOverride: any = null) => {
+  const handleSave = async (dataOverride: any = null, showPostModal: boolean = false) => {
     try {
       // Éviter de traiter l'objet événement comme des données si appelé via onClick={handleSave}
       const actualData = (dataOverride && dataOverride.nativeEvent) ? null : dataOverride;
@@ -597,9 +598,12 @@ export default function App() {
       // On attend la fin de la synchronisation avant de quitter
       await syncIntervention(itemToSync);
 
-      // L'utilisateur souhaite rester sur la page pour consulter
-      showNotification("Sauvegarde automatique effectuée");
-      console.log("Save successful, staying on page for consultation");
+      if (showPostModal) {
+        setShowPostSaveModal(true);
+      } else {
+        showNotification("Sauvegarde automatique effectuée");
+      }
+      console.log("Save successful, modal status:", showPostModal);
     } catch (error) {
       console.error("CRITICAL ERROR in handleSave:", error);
       alert("Une erreur est survenue lors de la sauvegarde. Détails: " + (error as Error).message);
@@ -852,7 +856,7 @@ export default function App() {
                 alert("L'analyse est terminée mais des champs obligatoires sont manquants : " + missing.join(", ") + ". Veuillez les compléter pour enregistrer.");
               } else {
                 // Sauvegarde automatique directe
-                handleSave(finalDataForSave);
+                handleSave(finalDataForSave, true);
               }
             }
           }, 800);
@@ -1145,7 +1149,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => {
-            handleSave();
+            handleSave(null, true);
             setFocusedElement({ id: "", rect: null });
           }}
           className="bg-[#daa520] text-black px-4 py-2 rounded-full shadow-2xl border-2 border-black/20 font-black text-[10px] uppercase tracking-wider flex items-center gap-2 hover:bg-[#ffb700] hover:scale-110 active:scale-95 transition-all animate-fade-in-down"
@@ -1202,6 +1206,45 @@ export default function App() {
             >
               Fermer
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const PostSaveModal = () => {
+    if (!showPostSaveModal) return null;
+
+    return (
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowPostSaveModal(false)}></div>
+        <div className="bg-[#1B263B] w-full max-w-md rounded-2xl border-2 border-[#daa520]/50 shadow-[0_0_50px_rgba(218,165,32,0.3)] overflow-hidden relative animate-modal-in">
+          <div className="bg-[#daa520] p-4 flex items-center gap-3 shadow-lg">
+            <ShieldCheck className="text-black w-6 h-6" />
+            <h2 className="text-black font-black uppercase tracking-tighter text-lg">Bon enregistré</h2>
+          </div>
+          <div className="p-8 text-center">
+            <p className="text-white font-bold mb-8">Voulez-vous enregistrer un autre bon ?</p>
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={() => {
+                  setShowPostSaveModal(false);
+                  handleOpenSaisie(); // Nouvelle saisie
+                }}
+                className="w-full bg-[#daa520] hover:bg-[#ffb700] text-black font-black py-4 rounded-xl uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3"
+              >
+                <Camera size={20} /> Oui, enregistrer un autre bon
+              </button>
+              <button
+                onClick={() => {
+                  setShowPostSaveModal(false);
+                  setView('consultation'); // Consultation
+                }}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all flex items-center justify-center gap-3"
+              >
+                <ClipboardList size={20} /> Non, voir les bons
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1356,7 +1399,7 @@ export default function App() {
                 <div className="flex gap-2 w-full sm:w-auto">
                   <label htmlFor="photo-upload-camera" className={`flex-1 sm:flex-none cursor-pointer bg-white/10 hover:bg-white/20 active:scale-95 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-white/20 transition-all ${isExtracting ? 'opacity-50 pointer-events-none' : ''}`}>
                     <span className="text-lg">📷</span>
-                    {isExtracting ? (extractStep || '...') : 'Photo du bon'}
+                    {isExtracting ? (extractStep || '...') : 'Scanner un bon'}
                   </label>
                 </div>
               </>
@@ -2378,6 +2421,7 @@ export default function App() {
       `}} />
       <FloatingSaveButton />
       <LateInterventionsModal />
+      <PostSaveModal />
     </div>
   );
 }
