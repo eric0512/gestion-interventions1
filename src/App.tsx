@@ -604,9 +604,9 @@ export default function App() {
         showNotification("Sauvegarde automatique effectuée");
       }
       console.log("Save successful, modal status:", showPostModal);
-    } catch (error) {
+    } catch (error: any) {
       console.error("CRITICAL ERROR in handleSave:", error);
-      alert("Une erreur est survenue lors de la sauvegarde. Détails: " + (error as Error).message);
+      alert("Une erreur est survenue lors de la sauvegarde. Détails: " + (error?.message || "Erreur inconnue"));
     }
   };
 
@@ -818,48 +818,41 @@ export default function App() {
             return;
           }
 
-          let finalDataForSave: any = null;
-
-          setFormData((prev: any) => {
-            const newData = { ...prev };
-            // On ne met à jour que les champs où l'IA a trouvé quelque chose de non-vide
-            Object.keys(extractedData).forEach(key => {
-              if (extractedData[key] && extractedData[key].trim() !== "") {
-                newData[key] = extractedData[key];
-              }
-            });
-
-            if (newData.passages && newData.passages.length > 0) {
-              newData.passages = [...newData.passages];
-              newData.passages[0] = {
-                ...newData.passages[0],
-                dateExecution: extractedData.dateExecution || newData.passages[0].dateExecution,
-                travauxRealises: extractedData.travauxRealises || newData.passages[0].travauxRealises,
-                tempsPasse: extractedData.tempsPasse || newData.passages[0].tempsPasse,
-                nomIntervenant: extractedData.nomIntervenant || newData.passages[0].nomIntervenant,
-              };
+          // Calculer les nouvelles données pour mise à jour et sauvegarde
+          const newData = { ...formData };
+          Object.keys(extractedData).forEach(key => {
+            if (extractedData[key] && extractedData[key].trim() !== "") {
+              newData[key] = extractedData[key];
             }
-            finalDataForSave = newData;
-            setIsAiProcessed(true); // Marquage comme traité par IA
-            return newData;
           });
+
+          if (newData.passages && newData.passages.length > 0) {
+            newData.passages = [...newData.passages];
+            newData.passages[0] = {
+              ...newData.passages[0],
+              dateExecution: extractedData.dateExecution || newData.passages[0].dateExecution,
+              travauxRealises: extractedData.travauxRealises || newData.passages[0].travauxRealises,
+              tempsPasse: extractedData.tempsPasse || newData.passages[0].tempsPasse,
+              nomIntervenant: extractedData.nomIntervenant || newData.passages[0].nomIntervenant,
+            };
+          }
+
+          setFormData(newData);
+          setIsAiProcessed(true);
 
           // Vérification des champs obligatoires et sauvegarde automatique
           setTimeout(() => {
-            if (finalDataForSave) {
-              const missing = [];
-              if (!finalDataForSave.dateSaisie) missing.push("'Colmar le'");
-              if (!finalDataForSave.dateDemande) missing.push("'Date de demande'");
-              if (!finalDataForSave.numeroBon) missing.push("'N° de bon'");
+            const missing = [];
+            if (!newData.dateSaisie) missing.push("'Colmar le'");
+            if (!newData.dateDemande) missing.push("'Date de demande'");
+            if (!newData.numeroBon) missing.push("'N° de bon'");
 
-              if (missing.length > 0) {
-                alert("L'analyse est terminée mais des champs obligatoires sont manquants : " + missing.join(", ") + ". Veuillez les compléter pour enregistrer.");
-              } else {
-                // Sauvegarde automatique directe
-                handleSave(finalDataForSave, true);
-              }
+            if (missing.length > 0) {
+              alert("L'analyse est terminée mais des champs obligatoires sont manquants : " + missing.join(", ") + ". Veuillez les compléter pour enregistrer.");
+            } else {
+              handleSave(newData, true);
             }
-          }, 800);
+          }, 500);
 
         } catch (parseError: any) {
           console.error("JSON Parse Error:", parseError, "Text:", text);
@@ -1212,7 +1205,8 @@ export default function App() {
     );
   };
 
-  const PostSaveModal = () => {
+  // --- Composant Modal de confirmation post-sauvegarde ---
+  const renderPostSaveModal = () => {
     if (!showPostSaveModal) return null;
 
     return (
@@ -1227,6 +1221,7 @@ export default function App() {
             <p className="text-white font-bold mb-8">Voulez-vous enregistrer un autre bon ?</p>
             <div className="flex flex-col gap-4">
               <button
+                type="button"
                 onClick={() => {
                   setShowPostSaveModal(false);
                   handleOpenSaisie(); // Nouvelle saisie
@@ -1236,6 +1231,7 @@ export default function App() {
                 <Camera size={20} /> Oui, enregistrer un autre bon
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setShowPostSaveModal(false);
                   setView('consultation'); // Consultation
@@ -2421,7 +2417,7 @@ export default function App() {
       `}} />
       <FloatingSaveButton />
       <LateInterventionsModal />
-      <PostSaveModal />
+      {renderPostSaveModal()}
     </div>
   );
 }
