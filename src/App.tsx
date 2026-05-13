@@ -1385,6 +1385,15 @@ export default function App() {
             </div>
           </div>
           <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
+            {formData.photo_url && (
+              <button
+                type="button"
+                onClick={() => window.open(formData.photo_url, '_blank')}
+                className="flex-1 sm:flex-none bg-[#daa520] hover:bg-[#ffb700] text-black px-4 py-2 rounded-lg text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+              >
+                <Camera size={16} /> Voir le bon
+              </button>
+            )}
             {!currentId && (
               <>
                 {/* Input specifically for Camera */}
@@ -1411,6 +1420,35 @@ export default function App() {
             </div>
           )}
         </header>
+
+        {formData.photo_url && (
+          <div className="mx-4 md:mx-6 mt-4">
+            <div className="bg-[#1B263B]/30 rounded-xl border border-[#daa520]/20 p-2 flex items-center gap-4 overflow-hidden shadow-inner">
+               <div className="relative group flex-shrink-0">
+                 <img 
+                   src={formData.photo_url} 
+                   alt="Source"
+                   className="w-16 h-16 rounded object-cover cursor-pointer border border-white/10 group-hover:brightness-110 transition-all" 
+                   onClick={() => window.open(formData.photo_url, '_blank')}
+                 />
+                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                   <Camera size={16} className="text-[#daa520]" />
+                 </div>
+               </div>
+               <div className="flex-grow">
+                 <p className="text-[10px] font-black text-[#daa520] uppercase tracking-widest leading-none mb-1">Document original scanné</p>
+                 <p className="text-white text-[10px] opacity-60 uppercase font-bold">Cliquez pour agrandir et vérifier les informations</p>
+               </div>
+               <button 
+                 type="button"
+                 onClick={() => window.open(formData.photo_url, '_blank')}
+                 className="p-3 text-[#daa520] hover:bg-white/5 rounded-xl transition-colors"
+               >
+                 <ChevronRight size={24} />
+               </button>
+            </div>
+          </div>
+        )}
 
         {extractionError && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 m-4" role="alert">
