@@ -621,10 +621,12 @@ export default function App() {
   const uploadImage = async (file: File | Blob): Promise<string | null> => {
     try {
       const fileName = `photo_${Date.now()}.png`;
-      console.log(`[Storage] Tentative d'upload: ${fileName} (${file.size} octets)`);
+      const filePath = `scans/${fileName}`;
+      console.log(`[Storage] Tentative d'upload: ${filePath} (${file.size} octets)`);
+      
       const { data, error } = await supabase.storage
         .from('interventions-photos')
-        .upload(fileName, file);
+        .upload(filePath, file, { upsert: true });
 
       if (error) {
         console.error("[Storage] Erreur d'upload:", error);
@@ -633,7 +635,7 @@ export default function App() {
 
       const { data: { publicUrl } } = supabase.storage
         .from('interventions-photos')
-        .getPublicUrl(fileName);
+        .getPublicUrl(filePath);
 
       console.log("[Storage] Upload réussi, URL:", publicUrl);
       return publicUrl;
@@ -1042,10 +1044,12 @@ export default function App() {
     // Tentative de suppression du fichier physique dans Storage
     if (oldUrl) {
       try {
-        const urlParts = oldUrl.split('/interventions-photos/');
-        if (urlParts.length > 1) {
-          const filePath = urlParts[1];
-          await supabase.storage.from('interventions-photos').remove([filePath]);
+        const bucketName = 'interventions-photos';
+        if (oldUrl.includes(`/${bucketName}/`)) {
+          const filePath = oldUrl.split(`/${bucketName}/`)[1];
+          if (filePath) {
+            await supabase.storage.from(bucketName).remove([filePath]);
+          }
         }
       } catch (err) {
         console.error("Erreur lors de la suppression du fichier storage (photo):", err);
@@ -1399,7 +1403,13 @@ export default function App() {
             {formData.photo_url && (
               <button
                 type="button"
-                onClick={() => window.open(formData.photo_url, '_blank')}
+                onClick={() => {
+                  if (formData.photo_url) {
+                    window.open(formData.photo_url, '_blank');
+                  } else {
+                    alert("Aucune URL de photo disponible.");
+                  }
+                }}
                 className="flex-1 sm:flex-none bg-[#daa520] hover:bg-[#ffb700] text-black px-4 py-2 rounded-lg text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
               >
                 <Camera size={16} /> Voir le bon
@@ -1449,6 +1459,7 @@ export default function App() {
                <div className="flex-grow">
                  <p className="text-[10px] font-black text-[#daa520] uppercase tracking-widest leading-none mb-1">Document original scanné</p>
                  <p className="text-white text-[10px] opacity-60 uppercase font-bold">Cliquez pour agrandir et vérifier les informations</p>
+                 {formData.photo_url && <p className="text-[6px] text-white/20 break-all mt-1 hidden sm:block">{formData.photo_url}</p>}
                </div>
                <button 
                  type="button"
