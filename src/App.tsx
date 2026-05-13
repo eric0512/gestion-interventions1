@@ -2525,17 +2525,7 @@ export default function App() {
 
         <p className="mt-8 text-slate-600 text-xs">Gestion des Interventions - Maintenance Industrielle</p>
 
-        <style dangerouslySetInnerHTML={{
-          __html: `
-          @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-          }
-          .animate-shake {
-            animation: shake 0.2s ease-in-out 0s 2;
-          }
-        `}} />
+
       </div>
     );
   }
@@ -2589,30 +2579,7 @@ export default function App() {
         </div>
       )}
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translate(-50%, 20px); }
-          to { opacity: 1; transform: translate(-50%, 0); }
-        }
-        @keyframes fadeInDown {
-          from { opacity: 0; transform: translate(-50%, -10px); }
-          to { opacity: 1; transform: translate(-50%, 0); }
-        }
-        .animate-fade-in-up {
-          animation: fadeInUp 0.3s ease-out forwards;
-        }
-        .animate-fade-in-down {
-          animation: fadeInDown 0.2s ease-out forwards;
-        }
-        @keyframes modalFadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-modal-in {
-          animation: modalFadeIn 0.3s ease-out forwards;
-        }
-      `}} />
+
       <FloatingSaveButton />
       <LateInterventionsModal />
       {renderPostSaveModal()}
