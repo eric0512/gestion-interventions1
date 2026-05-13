@@ -323,7 +323,7 @@ export default function App() {
 
   // --- États pour l'alerte des bons en retard ---
   const [showLateModal, setShowLateModal] = useState(false);
-  const [hasShownLateModal, setHasShownLateModal] = useState(false);
+  const [hasShownLateModal, setHasShownLateModal] = useState(true);
   const [showPostSaveModal, setShowPostSaveModal] = useState(false);
 
   useEffect(() => {
@@ -2540,14 +2540,38 @@ export default function App() {
     );
   }
 
+  // Fonction de rendu sécurisée pour chaque vue
+  const renderCurrentView = () => {
+    try {
+      switch(view) {
+        case 'menu': return renderMenu();
+        case 'saisie': return renderSaisie();
+        case 'consultation': return renderConsultation();
+        case 'recherche': return renderRecherche();
+        case 'stats': return renderStats();
+        default: return renderMenu();
+      }
+    } catch (e) {
+      console.error('ERREUR RENDU VUE:', view, e);
+      return (
+        <div className="bg-red-900/50 border border-red-500 rounded-xl p-6 text-center">
+          <p className="text-white font-bold mb-2">Erreur d'affichage</p>
+          <p className="text-red-300 text-xs mb-4">{String(e)}</p>
+          <button
+            onClick={() => setView('menu')}
+            className="bg-[#daa520] text-black px-6 py-2 rounded-lg font-bold"
+          >
+            Retour au menu
+          </button>
+        </div>
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#415A77] p-6 font-sans text-slate-800">
       <div className="max-w-4xl mx-auto">
-        {view === 'menu' && renderMenu()}
-        {view === 'saisie' && renderSaisie()}
-        {view === 'consultation' && renderConsultation()}
-        {view === 'recherche' && renderRecherche()}
-        {view === 'stats' && renderStats()}
+        {renderCurrentView()}
       </div>
 
       {/* Notification Furtive (Toast) */}
@@ -2595,7 +2619,7 @@ export default function App() {
       
       {/* Version info for debugging */}
       <div className="fixed bottom-2 right-4 text-[8px] text-white/20 font-mono pointer-events-none">
-        MC V2.2 - Signed URLs
+        MC V2.3 - ErrorBoundary
       </div>
     </div>
   );

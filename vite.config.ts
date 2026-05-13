@@ -10,6 +10,10 @@ export default defineConfig(({mode}) => {
     define: {
       '__APP_GEMINI_KEY__': JSON.stringify(process.env.VITE_GEMINI_API_KEY || "")
     },
+    build: {
+      // Target compatible avec Samsung Internet, Xiaomi MIUI Browser, etc.
+      target: ['es2020', 'chrome80', 'safari14'],
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
@@ -17,7 +21,7 @@ export default defineConfig(({mode}) => {
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };
