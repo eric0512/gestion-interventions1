@@ -628,10 +628,14 @@ export default function App() {
         .from('interventions-photos')
         .upload(filePath, file, { upsert: true });
 
+      // Debug alert pour identifier le problème exact (sera retiré après résolution)
       if (error) {
+        alert("ERREUR STORAGE SUPABASE :\nBucket: interventions-photos\nPath: " + filePath + "\nMessage: " + error.message + "\nCode: " + error.statusCode);
         console.error("[Storage] Erreur d'upload:", error);
         throw error;
       }
+      
+      console.log("[Storage] Upload réussi, data:", data);
 
       const { data: signedData, error: signedError } = await supabase.storage
         .from('interventions-photos')
