@@ -54,14 +54,23 @@ const getTodayFormatted = () => {
 };
 
 const getDaysElapsed = (dateStr: string, endDateStr?: string) => {
-  if (!dateStr) return 0;
-  const date = new Date(dateStr);
-  const end = endDateStr ? new Date(endDateStr) : new Date();
-  end.setHours(0, 0, 0, 0);
-  date.setHours(0, 0, 0, 0);
-  const diffTime = end.getTime() - date.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
+  try {
+    if (!dateStr || typeof dateStr !== 'string') return 0;
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 0;
+    
+    const end = endDateStr ? new Date(endDateStr) : new Date();
+    if (isNaN(end.getTime())) return 0;
+    
+    end.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
+    const diffTime = end.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return isNaN(diffDays) ? 0 : diffDays;
+  } catch (e) {
+    console.error("Erreur calcul jours:", e);
+    return 0;
+  }
 };
 
 const isDateOlderThan30Days = (dateStr: string, endDateStr?: string) => {
@@ -84,6 +93,13 @@ const hashPin = async (pin: string) => {
 
 export default function App() {
   const [view, setView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche' | 'stats'>(() => {
+    // Si c'est une nouvelle session (pas de flag 'session_active'), on force le retour au menu
+    const isNewSession = !sessionStorage.getItem('app_session_active');
+    if (isNewSession) {
+      sessionStorage.setItem('app_session_active', 'true');
+      return 'menu';
+    }
+
     const saved = sessionStorage.getItem('app_view');
     const validViews = ['menu', 'saisie', 'consultation', 'recherche', 'stats'];
     return (validViews.includes(saved as string) ? saved : 'menu') as any;
@@ -276,16 +292,21 @@ export default function App() {
 
   // --- États pour l'alerte des bons en retard ---
   const [showLateModal, setShowLateModal] = useState(false);
-  const [hasShownLateModal, setHasShownLateModal] = useState(true);
+  const [hasShownLateModal, setHasShownLateModal] = useState(false);
   const [showPostSaveModal, setShowPostSaveModal] = useState(false);
 
   useEffect(() => {
     // On n'affiche le modal que si on est authentifié et que les interventions sont chargées
     if (isAuthenticated && interventions.length > 0 && !hasShownLateModal) {
-      const lateOnes = interventions.filter((i: any) => !i.archived && isDateOlderThan30Days(i.dateDemande));
-      if (lateOnes.length > 0) {
-        setShowLateModal(true);
-        setHasShownLateModal(true);
+      try {
+        const lateOnes = interventions.filter((i: any) => i && !i.archived && isDateOlderThan30Days(i.dateDemande));
+        if (lateOnes.length > 0) {
+          setShowLateModal(true);
+          setHasShownLateModal(true);
+        }
+      } catch (e) {
+        console.error("Erreur calcul bons en retard:", e);
+        setHasShownLateModal(true); // On marque comme montré pour éviter de re-essayer et crasher
       }
     }
   }, [isAuthenticated, interventions, hasShownLateModal]);
@@ -2445,9 +2466,23 @@ export default function App() {
             </button>
           </div>
 
-          <div className="mt-8 flex items-center gap-2 text-xs text-slate-500">
-            <ShieldCheck className="w-4 h-4 text-[#daa520]/60" />
-            <span>Système d'authentification matériel local</span>
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <ShieldCheck className="w-4 h-4 text-[#daa520]/60" />
+              <span>Système d'authentification matériel local</span>
+            </div>
+            
+            <button 
+              onClick={() => {
+                sessionStorage.clear();
+                localStorage.removeItem('app_view');
+                localStorage.removeItem('app_previous_view');
+                window.location.reload();
+              }}
+              className="text-[10px] text-[#daa520]/50 hover:text-[#daa520] underline transition-colors"
+            >
+              Réinitialiser l'affichage si bloqué
+            </button>
           </div>
         </div>
 
