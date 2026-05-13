@@ -70,6 +70,11 @@ const isDateOlderThan30Days = (dateStr: string, endDateStr?: string) => {
 
 // Fonction de hachage simple pour le code de protection
 const hashPin = async (pin: string) => {
+  if (!window.crypto || !window.crypto.subtle) {
+    console.warn("Crypto Subtle non supporté (contexte non sécurisé ?). Utilisation d'un fallback non sécurisé.");
+    // Fallback basique si pas de crypto (très improbable sur mobile moderne HTTPS)
+    return pin.split('').reverse().join(''); 
+  }
   const encoder = new TextEncoder();
   const data = encoder.encode(pin);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -79,10 +84,14 @@ const hashPin = async (pin: string) => {
 
 export default function App() {
   const [view, setView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche' | 'stats'>(() => {
-    return (sessionStorage.getItem('app_view') as any) || 'menu';
+    const saved = sessionStorage.getItem('app_view');
+    const validViews = ['menu', 'saisie', 'consultation', 'recherche', 'stats'];
+    return (validViews.includes(saved as string) ? saved : 'menu') as any;
   });
   const [previousView, setPreviousView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche' | 'stats'>(() => {
-    return (sessionStorage.getItem('app_previous_view') as any) || 'menu';
+    const saved = sessionStorage.getItem('app_previous_view');
+    const validViews = ['menu', 'saisie', 'consultation', 'recherche', 'stats'];
+    return (validViews.includes(saved as string) ? saved : 'menu') as any;
   });
   const [consultationTab, setConsultationTab] = useState<'enCours' | 'archivees' | 'enRetard'>('enCours');
   const [searchQuery, setSearchQuery] = useState("");
@@ -185,24 +194,26 @@ export default function App() {
   const [timeSinceLastOpen, setTimeSinceLastOpen] = useState<string>("");
 
   useEffect(() => {
-    const lastOpen = localStorage.getItem('app_last_opening');
-    const now = new Date().getTime();
-
-    if (lastOpen) {
-      const diff = now - parseInt(lastOpen);
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      let parts = [];
-      if (days > 0) parts.push(`${days}j`);
-      if (hours > 0 || days > 0) parts.push(`${hours}h`);
-      parts.push(`${seconds}s`);
-
-      setTimeSinceLastOpen(parts.join(' '));
-    }
-
-    localStorage.setItem('app_last_opening', now.toString());
+    try {
+      const lastOpen = localStorage.getItem('app_last_opening');
+      const now = new Date().getTime();
+  
+      if (lastOpen) {
+        const diff = now - parseInt(lastOpen);
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+        let parts = [];
+        if (days > 0) parts.push(`${days}j`);
+        if (hours > 0 || days > 0) parts.push(`${hours}h`);
+        parts.push(`${seconds}s`);
+  
+        setTimeSinceLastOpen(parts.join(' '));
+      }
+  
+      localStorage.setItem('app_last_opening', now.toString());
+    } catch (e) { console.warn("Erreur initiale localStorage:", e); }
   }, []);
 
   useEffect(() => {
@@ -303,17 +314,20 @@ export default function App() {
       if (error) throw error;
 
       if (data) {
-        setInterventions(data.map((i: any) => {
-          // Si la colonne 'archived' n'existe pas en base, on la calcule à partir des passages
-          const hasClosingState = i.passages?.some((p: any) =>
-            p.raisonNouveauPassage === 'Terminé' ||
-            p.raisonNouveauPassage === "Intervention d'une autre entreprise nécessaire"
-          );
-          return {
-            ...i,
-            archived: i.archived ?? hasClosingState ?? false
-          };
-        }));
+        setInterventions(data
+          .filter((i: any) => i !== null && typeof i === 'object' && i.id)
+          .map((i: any) => {
+            // Si la colonne 'archived' n'existe pas en base, on la calcule à partir des passages
+            const hasClosingState = i.passages?.some((p: any) =>
+              p.raisonNouveauPassage === 'Terminé' ||
+              p.raisonNouveauPassage === "Intervention d'une autre entreprise nécessaire"
+            );
+            return {
+              ...i,
+              archived: i.archived ?? hasClosingState ?? false
+            };
+          })
+        );
       }
       setSyncStatus('synced');
     } catch (err) {
@@ -346,27 +360,40 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    sessionStorage.setItem('app_view', view);
+    try {
+      sessionStorage.setItem('app_view', view);
+    } catch (e) { console.warn("Erreur sessionStorage view:", e); }
   }, [view]);
 
   useEffect(() => {
-    sessionStorage.setItem('app_previous_view', previousView);
+    try {
+      sessionStorage.setItem('app_previous_view', previousView);
+    } catch (e) { console.warn("Erreur sessionStorage previousView:", e); }
   }, [previousView]);
 
   useEffect(() => {
-    sessionStorage.setItem('app_formData', JSON.stringify(formData));
+    try {
+      sessionStorage.setItem('app_formData', JSON.stringify(formData));
+    } catch (e) { console.warn("Erreur sessionStorage formData:", e); }
   }, [formData]);
 
   useEffect(() => {
-    if (currentId) {
-      sessionStorage.setItem('app_currentId', currentId);
-    } else {
-      sessionStorage.removeItem('app_currentId');
-    }
+    try {
+      if (currentId) {
+        sessionStorage.setItem('app_currentId', currentId);
+      } else {
+        sessionStorage.removeItem('app_currentId');
+      }
+    } catch (e) { console.warn("Erreur sessionStorage currentId:", e); }
   }, [currentId]);
 
   useEffect(() => {
-    localStorage.setItem('interventions', JSON.stringify(interventions));
+    try {
+      localStorage.setItem('interventions', JSON.stringify(interventions));
+    } catch (e) {
+      console.warn("Erreur localStorage interventions (quota probable):", e);
+      // On ne crash pas, le state React reste valide pour la session en cours
+    }
   }, [interventions]);
 
   // Fonction de synchronisation unitaire
@@ -628,9 +655,7 @@ export default function App() {
         .from('interventions-photos')
         .upload(filePath, file, { upsert: true });
 
-      // Debug alert pour identifier le problème exact (sera retiré après résolution)
       if (error) {
-        alert("ERREUR STORAGE SUPABASE :\nBucket: interventions-photos\nPath: " + filePath + "\nMessage: " + error.message + "\nCode: " + error.statusCode);
         console.error("[Storage] Erreur d'upload:", error);
         throw error;
       }
@@ -1475,7 +1500,6 @@ export default function App() {
                <div className="flex-grow">
                  <p className="text-[10px] font-black text-[#daa520] uppercase tracking-widest leading-none mb-1">Document original scanné</p>
                  <p className="text-white text-[10px] opacity-60 uppercase font-bold">Cliquez pour agrandir et vérifier les informations</p>
-                 {formData.photo_url && <p className="text-[6px] text-white/20 break-all mt-1 hidden sm:block">{formData.photo_url}</p>}
                </div>
                <button 
                  type="button"
