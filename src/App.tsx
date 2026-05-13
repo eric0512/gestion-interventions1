@@ -620,7 +620,8 @@ export default function App() {
 
   const uploadImage = async (file: File | Blob): Promise<string | null> => {
     try {
-      const fileName = `photo_${Date.now()}.png`;
+      const extension = file.type?.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
+      const fileName = `photo_${Date.now()}.${extension}`;
       const { data, error } = await supabase.storage
         .from('interventions-photos')
         .upload(fileName, file);
@@ -696,24 +697,23 @@ export default function App() {
 
       setExtractStep("Sauvegarde image...");
       
-      // Suppression de l'ancienne photo si elle existe
-      if (formData.photo_url) {
-        try {
-          const oldUrl = formData.photo_url;
-          if (oldUrl.includes('/interventions-photos/')) {
-            const oldPath = oldUrl.split('/interventions-photos/')[1];
+      const oldPhotoUrl = formData.photo_url;
+      const photoUrl = await uploadImage(processedFile);
+      
+      if (photoUrl) {
+        setFormData(prev => ({ ...prev, photo_url: photoUrl }));
+        
+        // Suppression de l'ancienne photo UNIQUEMENT si le nouvel upload a réussi
+        if (oldPhotoUrl && oldPhotoUrl.includes('/interventions-photos/')) {
+          try {
+            const oldPath = oldPhotoUrl.split('/interventions-photos/')[1];
             if (oldPath) {
               await supabase.storage.from('interventions-photos').remove([oldPath]);
             }
+          } catch (err) {
+            console.error("Erreur lors de la suppression de l'ancienne photo:", err);
           }
-        } catch (err) {
-          console.error("Erreur lors de la suppression de l'ancienne photo:", err);
         }
-      }
-
-      const photoUrl = await uploadImage(processedFile);
-      if (photoUrl) {
-        setFormData(prev => ({ ...prev, photo_url: photoUrl }));
       }
 
 
@@ -819,7 +819,8 @@ export default function App() {
           }
 
           // Calculer les nouvelles données pour mise à jour et sauvegarde
-          const newData = { ...formData };
+          // On s'assure d'utiliser le photoUrl fraîchement uploadé
+          const newData = { ...formData, photo_url: photoUrl || formData.photo_url };
           Object.keys(extractedData).forEach(key => {
             if (extractedData[key] && extractedData[key].trim() !== "") {
               newData[key] = extractedData[key];
