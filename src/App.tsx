@@ -633,15 +633,25 @@ export default function App() {
         throw error;
       }
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: signedData, error: signedError } = await supabase.storage
         .from('interventions-photos')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 315360000); // 10 ans
 
-      console.log("[Storage] Upload réussi, URL:", publicUrl);
-      return publicUrl;
+      if (signedError) {
+        console.error("[Storage] Erreur lien signé:", signedError);
+        // Fallback sur URL publique si le lien signé échoue
+        const { data: { publicUrl } } = supabase.storage
+          .from('interventions-photos')
+          .getPublicUrl(filePath);
+        console.log("[Storage] Fallback URL publique:", publicUrl);
+        return publicUrl;
+      }
+
+      console.log("[Storage] Upload réussi, Lien signé obtenu.");
+      return signedData.signedUrl;
     } catch (err: any) {
       console.error("Erreur d'upload image:", err);
-      alert("Échec de l'enregistrement de l'image sur le serveur. Vérifiez votre connexion. Détails: " + (err.message || "Erreur inconnue"));
+      alert("Échec de l'enregistrement de l'image sur le serveur. Détails: " + (err.message || "Erreur inconnue"));
       return null;
     }
   };
@@ -1405,6 +1415,8 @@ export default function App() {
                 type="button"
                 onClick={() => {
                   if (formData.photo_url) {
+                    // Affichage de l'URL pour diagnostic si besoin (décommenter si le 404 persiste)
+                    // alert("URL du bon : " + formData.photo_url);
                     window.open(formData.photo_url, '_blank');
                   } else {
                     alert("Aucune URL de photo disponible.");
