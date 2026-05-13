@@ -93,21 +93,34 @@ const hashPin = async (pin: string) => {
 
 export default function App() {
   const [view, setView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche' | 'stats'>(() => {
-    // Si c'est une nouvelle session (pas de flag 'session_active'), on force le retour au menu
-    const isNewSession = !sessionStorage.getItem('app_session_active');
-    if (isNewSession) {
-      sessionStorage.setItem('app_session_active', 'true');
+    try {
+      const saved = sessionStorage.getItem('app_view');
+      const validViews = ['menu', 'saisie', 'consultation', 'recherche', 'stats'];
+      return (validViews.includes(saved as string) ? saved : 'menu') as any;
+    } catch (e) {
       return 'menu';
     }
-
-    const saved = sessionStorage.getItem('app_view');
-    const validViews = ['menu', 'saisie', 'consultation', 'recherche', 'stats'];
-    return (validViews.includes(saved as string) ? saved : 'menu') as any;
   });
+
+  useEffect(() => {
+    try {
+      // Si c'est une nouvelle session (pas de flag 'session_active'), on force le retour au menu
+      const isNewSession = !sessionStorage.getItem('app_session_active');
+      if (isNewSession) {
+        sessionStorage.setItem('app_session_active', 'true');
+        setView('menu');
+      }
+    } catch (e) { console.warn("Erreur session_active storage:", e); }
+  }, []);
+
   const [previousView, setPreviousView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche' | 'stats'>(() => {
-    const saved = sessionStorage.getItem('app_previous_view');
-    const validViews = ['menu', 'saisie', 'consultation', 'recherche', 'stats'];
-    return (validViews.includes(saved as string) ? saved : 'menu') as any;
+    try {
+      const saved = sessionStorage.getItem('app_previous_view');
+      const validViews = ['menu', 'saisie', 'consultation', 'recherche', 'stats'];
+      return (validViews.includes(saved as string) ? saved : 'menu') as any;
+    } catch (e) {
+      return 'menu';
+    }
   });
   const [consultationTab, setConsultationTab] = useState<'enCours' | 'archivees' | 'enRetard'>('enCours');
   const [searchQuery, setSearchQuery] = useState("");
@@ -128,13 +141,7 @@ export default function App() {
   });
 
   const [formData, setFormData] = useState(() => {
-    const saved = sessionStorage.getItem('app_formData');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) { }
-    }
-    return {
+    const defaultData = {
       dateSaisie: "",
       numeroBon: "",
       demandeur: "",
@@ -160,10 +167,24 @@ export default function App() {
         autreRaison: ""
       }]
     };
+
+    try {
+      const saved = sessionStorage.getItem('app_formData');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn("Erreur init formData storage:", e);
+    }
+    return defaultData;
   });
 
   const [currentId, setCurrentId] = useState<string | null>(() => {
-    return sessionStorage.getItem('app_currentId');
+    try {
+      return sessionStorage.getItem('app_currentId');
+    } catch (e) {
+      return null;
+    }
   });
 
   const [isExtracting, setIsExtracting] = useState(false);
@@ -253,17 +274,22 @@ export default function App() {
 
   const handlePinSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const hash = await hashPin(pinInput);
-    const stored = localStorage.getItem('app_pcode');
+    try {
+      const hash = await hashPin(pinInput);
+      const stored = localStorage.getItem('app_pcode');
 
-    if (hash === stored) {
-      setIsAuthenticated(true);
-      setPinError(false);
-    } else {
+      if (hash === stored) {
+        setIsAuthenticated(true);
+        setPinError(false);
+      } else {
+        setPinError(true);
+        setPinInput("");
+        // Petit effet visuel d'erreur
+        setTimeout(() => setPinError(false), 500);
+      }
+    } catch (e) {
+      console.error("Erreur authentification:", e);
       setPinError(true);
-      setPinInput("");
-      // Petit effet visuel d'erreur
-      setTimeout(() => setPinError(false), 500);
     }
   };
 
@@ -279,14 +305,19 @@ export default function App() {
   };
 
   const checkPin = async (val: string) => {
-    const hash = await hashPin(val);
-    const stored = localStorage.getItem('app_pcode');
-    if (hash === stored) {
-      setIsAuthenticated(true);
-    } else {
+    try {
+      const hash = await hashPin(val);
+      const stored = localStorage.getItem('app_pcode');
+      if (hash === stored) {
+        setIsAuthenticated(true);
+      } else {
+        setPinError(true);
+        setPinInput("");
+        setTimeout(() => setPinError(false), 500);
+      }
+    } catch (e) {
+      console.error("Erreur check PIN:", e);
       setPinError(true);
-      setPinInput("");
-      setTimeout(() => setPinError(false), 500);
     }
   };
 
@@ -1233,7 +1264,7 @@ export default function App() {
   const LateInterventionsModal = () => {
     if (!showLateModal) return null;
 
-    const lateOnes = interventions.filter((i: any) => !i.archived && isDateOlderThan30Days(i.dateDemande));
+    const lateOnes = interventions.filter((i: any) => i && !i.archived && isDateOlderThan30Days(i.dateDemande));
     if (lateOnes.length === 0) return null;
 
     return (
@@ -2474,10 +2505,16 @@ export default function App() {
             
             <button 
               onClick={() => {
-                sessionStorage.clear();
-                localStorage.removeItem('app_view');
-                localStorage.removeItem('app_previous_view');
-                window.location.reload();
+                try {
+                  sessionStorage.removeItem('app_view');
+                  sessionStorage.removeItem('app_previous_view');
+                  sessionStorage.removeItem('app_session_active');
+                  localStorage.removeItem('app_view');
+                  localStorage.removeItem('app_previous_view');
+                  window.location.reload();
+                } catch (e) {
+                  window.location.reload();
+                }
               }}
               className="text-[10px] text-[#daa520]/50 hover:text-[#daa520] underline transition-colors"
             >
