@@ -1427,7 +1427,7 @@ export default function App() {
                 <Camera size={16} /> Voir le bon
               </button>
             )}
-            {!currentId && (
+            {!formData.archived && (
               <>
                 {/* Input specifically for Camera */}
                 <input type="file" accept="image/*" capture="environment" onChange={(e) => {
@@ -2492,6 +2492,11 @@ export default function App() {
       <FloatingSaveButton />
       <LateInterventionsModal />
       {renderPostSaveModal()}
+      
+      {/* Version info for debugging */}
+      <div className="fixed bottom-2 right-4 text-[8px] text-white/20 font-mono pointer-events-none">
+        MC V2.2 - Signed URLs
+      </div>
     </div>
   );
 }
