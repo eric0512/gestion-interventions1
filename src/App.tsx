@@ -620,21 +620,26 @@ export default function App() {
 
   const uploadImage = async (file: File | Blob): Promise<string | null> => {
     try {
-      const extension = file.type?.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
-      const fileName = `photo_${Date.now()}.${extension}`;
+      const fileName = `photo_${Date.now()}.png`;
+      console.log(`[Storage] Tentative d'upload: ${fileName} (${file.size} octets)`);
       const { data, error } = await supabase.storage
         .from('interventions-photos')
         .upload(fileName, file);
 
-      if (error) throw error;
+      if (error) {
+        console.error("[Storage] Erreur d'upload:", error);
+        throw error;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('interventions-photos')
         .getPublicUrl(fileName);
 
+      console.log("[Storage] Upload réussi, URL:", publicUrl);
       return publicUrl;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erreur d'upload image:", err);
+      alert("Échec de l'enregistrement de l'image sur le serveur. Vérifiez votre connexion. Détails: " + (err.message || "Erreur inconnue"));
       return null;
     }
   };
@@ -714,6 +719,11 @@ export default function App() {
             console.error("Erreur lors de la suppression de l'ancienne photo:", err);
           }
         }
+      } else {
+        // Si l'upload a échoué, on annule le scan pour éviter de sauvegarder un bon sans photo ou avec une photo morte
+        setIsExtracting(false);
+        setExtractionError("La photo n'a pas pu être sauvegardée sur le serveur. Abandon de l'analyse.");
+        return;
       }
 
 
