@@ -2110,9 +2110,11 @@ export default function App() {
                       </div>
                     </button>
                     <div className='flex gap-2'>
-                      <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
-                        <Trash2 size={20} />
-                      </button>
+                      {!i.archived && (
+                        <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
+                          <Trash2 size={20} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2233,9 +2235,11 @@ export default function App() {
                       </div>
                     </button>
                     <div className='flex gap-2'>
-                      <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
-                        <Trash2 size={20} />
-                      </button>
+                      {!i.archived && (
+                        <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
+                          <Trash2 size={20} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
