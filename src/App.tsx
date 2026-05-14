@@ -326,6 +326,11 @@ export default function App() {
   const [hasShownLateModal, setHasShownLateModal] = useState(true);
   const [showPostSaveModal, setShowPostSaveModal] = useState(false);
 
+  // --- États pour la gestion des doublons ---
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateIntervention, setDuplicateIntervention] = useState<any>(null);
+  const [pendingSaveData, setPendingSaveData] = useState<any>(null);
+
   useEffect(() => {
     // On n'affiche le modal que si on est authentifié et que les interventions sont chargées
     if (isAuthenticated && interventions.length > 0 && !hasShownLateModal) {
@@ -629,6 +634,23 @@ export default function App() {
       const actualData = (dataOverride && dataOverride.nativeEvent) ? null : dataOverride;
       const dataToValidate = actualData || formData;
       console.log("Starting handleSave with data:", dataToValidate);
+
+      // --- LOGIQUE DE DOUBLON ---
+      // On cherche si un autre bon possède le même numéro
+      if (dataToValidate.numeroBon) {
+        const duplicate = interventions.find((i: any) => 
+          i && 
+          i.numeroBon === dataToValidate.numeroBon && 
+          i.id !== (actualData?.id || currentId)
+        );
+
+        if (duplicate && !actualData?.confirmDuplicate) {
+          setDuplicateIntervention(duplicate);
+          setPendingSaveData(dataToValidate);
+          setShowDuplicateModal(true);
+          return;
+        }
+      }
 
       // Validation restrictive : Les 3 champs principaux + les passages
       if (!dataToValidate.dateSaisie) { alert("Le champ 'Colmar le' est obligatoire."); return; }
@@ -1347,6 +1369,64 @@ export default function App() {
                 className="w-full bg-slate-700 hover:bg-slate-600 text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all flex items-center justify-center gap-3"
               >
                 <ClipboardList size={20} /> Non, voir les bons
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // --- Composant Modal de détection de doublon ---
+  const DuplicateModal = () => {
+    if (!showDuplicateModal || !duplicateIntervention) return null;
+
+    return (
+      <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowDuplicateModal(false)}></div>
+        <div className="bg-[#1B263B] w-full max-w-md rounded-2xl border-2 border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.3)] overflow-hidden relative animate-modal-in">
+          <div className="bg-red-500 p-4 flex items-center gap-3 shadow-lg">
+            <ShieldCheck className="text-white w-6 h-6" />
+            <h2 className="text-white font-black uppercase tracking-tighter text-lg">Doublon détecté</h2>
+          </div>
+          <div className="p-8 text-center">
+            <div className="mb-6">
+              <p className="text-white font-black text-xl mb-2">Attention !</p>
+              <p className="text-slate-300 text-sm">
+                Le numéro de bon <span className="text-[#daa520] font-black">{duplicateIntervention.numeroBon}</span> est déjà enregistré dans la base de données.
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDuplicateModal(false);
+                  handleOpenSaisie(duplicateIntervention);
+                }}
+                className="w-full bg-[#daa520] hover:bg-[#ffb700] text-black font-black py-4 rounded-xl uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3"
+              >
+                <ClipboardList size={20} /> Ouvrir le bon existant
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDuplicateModal(false);
+                  // On remplace en utilisant l'ID de l'ancien bon pour l'écraser
+                  handleSave({ ...pendingSaveData, id: duplicateIntervention.id, confirmDuplicate: true }, true);
+                }}
+                className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3"
+              >
+                <Trash2 size={20} /> Remplacer et supprimer l'ancien
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowDuplicateModal(false)}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-3 rounded-xl uppercase text-xs transition-all"
+              >
+                Annuler
               </button>
             </div>
           </div>
@@ -2586,6 +2666,7 @@ export default function App() {
 
       <FloatingSaveButton />
       <LateInterventionsModal />
+      <DuplicateModal />
       {renderPostSaveModal()}
       
       {/* Version info for debugging */}
