@@ -459,9 +459,8 @@ export default function App() {
 
     setSyncStatus('syncing');
     try {
-      // On retire 'archived' de l'objet envoyé à Supabase car la colonne n'existe pas
-      // L'état archivé sera recalculé au chargement via le contenu des passages
-      const { archived, ...dataToSync } = item;
+      // On retire les champs qui ne sont pas des colonnes en base
+      const { archived, confirmDuplicate, ...dataToSync } = item;
 
       const { error } = await supabase
         .from('interventions')
@@ -676,12 +675,17 @@ export default function App() {
         dataToSave.travauxRealises = dataToSave.passages[0].travauxRealises;
       }
 
-      const newId = currentId || Date.now().toString();
+      const newId = (actualData?.id || currentId) || Date.now().toString();
       const itemToSync = {
         ...dataToSave,
         id: newId,
         archived: Boolean(dataToSave.archived)
       };
+
+      // Si on a remplacé un doublon, on s'assure que currentId est mis à jour
+      if (actualData?.id && !currentId) {
+        setCurrentId(actualData.id);
+      }
 
       console.log("Item to save:", itemToSync);
 
