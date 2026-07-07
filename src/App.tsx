@@ -321,9 +321,6 @@ export default function App() {
     }
   };
 
-<<<<<<< HEAD
-
-=======
   // --- États pour l'alerte des bons en retard ---
   const [showLateModal, setShowLateModal] = useState(false);
   const [hasShownLateModal, setHasShownLateModal] = useState(true);
@@ -349,7 +346,6 @@ export default function App() {
       }
     }
   }, [isAuthenticated, interventions, hasShownLateModal]);
->>>>>>> 27487cdf899f5bb4cff7eb1028e529a79fc39341
 
   useEffect(() => {
     if (view === 'saisie' && currentId) {
@@ -1291,9 +1287,6 @@ export default function App() {
     );
   };
 
-<<<<<<< HEAD
-
-=======
   const LateInterventionsModal = () => {
     if (!showLateModal) return null;
 
@@ -1345,7 +1338,6 @@ export default function App() {
       </div>
     );
   };
->>>>>>> 27487cdf899f5bb4cff7eb1028e529a79fc39341
 
   // --- Composant Modal de confirmation post-sauvegarde ---
   const renderPostSaveModal = () => {
