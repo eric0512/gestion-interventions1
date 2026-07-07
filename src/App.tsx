@@ -54,14 +54,23 @@ const getTodayFormatted = () => {
 };
 
 const getDaysElapsed = (dateStr: string, endDateStr?: string) => {
-  if (!dateStr) return 0;
-  const date = new Date(dateStr);
-  const end = endDateStr ? new Date(endDateStr) : new Date();
-  end.setHours(0, 0, 0, 0);
-  date.setHours(0, 0, 0, 0);
-  const diffTime = end.getTime() - date.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
+  try {
+    if (!dateStr || typeof dateStr !== 'string') return 0;
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 0;
+    
+    const end = endDateStr ? new Date(endDateStr) : new Date();
+    if (isNaN(end.getTime())) return 0;
+    
+    end.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
+    const diffTime = end.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return isNaN(diffDays) ? 0 : diffDays;
+  } catch (e) {
+    console.error("Erreur calcul jours:", e);
+    return 0;
+  }
 };
 
 const isDateOlderThan30Days = (dateStr: string, endDateStr?: string) => {
@@ -70,6 +79,11 @@ const isDateOlderThan30Days = (dateStr: string, endDateStr?: string) => {
 
 // Fonction de hachage simple pour le code de protection
 const hashPin = async (pin: string) => {
+  if (!window.crypto || !window.crypto.subtle) {
+    console.warn("Crypto Subtle non supporté (contexte non sécurisé ?). Utilisation d'un fallback non sécurisé.");
+    // Fallback basique si pas de crypto (très improbable sur mobile moderne HTTPS)
+    return pin.split('').reverse().join(''); 
+  }
   const encoder = new TextEncoder();
   const data = encoder.encode(pin);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -79,7 +93,34 @@ const hashPin = async (pin: string) => {
 
 export default function App() {
   const [view, setView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche' | 'stats'>(() => {
-    return (sessionStorage.getItem('app_view') as any) || 'menu';
+    try {
+      const saved = sessionStorage.getItem('app_view');
+      const validViews = ['menu', 'saisie', 'consultation', 'recherche', 'stats'];
+      return (validViews.includes(saved as string) ? saved : 'menu') as any;
+    } catch (e) {
+      return 'menu';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      // Si c'est une nouvelle session (pas de flag 'session_active'), on force le retour au menu
+      const isNewSession = !sessionStorage.getItem('app_session_active');
+      if (isNewSession) {
+        sessionStorage.setItem('app_session_active', 'true');
+        setView('menu');
+      }
+    } catch (e) { console.warn("Erreur session_active storage:", e); }
+  }, []);
+
+  const [previousView, setPreviousView] = useState<'menu' | 'saisie' | 'consultation' | 'recherche' | 'stats'>(() => {
+    try {
+      const saved = sessionStorage.getItem('app_previous_view');
+      const validViews = ['menu', 'saisie', 'consultation', 'recherche', 'stats'];
+      return (validViews.includes(saved as string) ? saved : 'menu') as any;
+    } catch (e) {
+      return 'menu';
+    }
   });
   const [consultationTab, setConsultationTab] = useState<'enCours' | 'archivees' | 'enRetard'>('enCours');
   const [searchQuery, setSearchQuery] = useState("");
@@ -100,13 +141,7 @@ export default function App() {
   });
 
   const [formData, setFormData] = useState(() => {
-    const saved = sessionStorage.getItem('app_formData');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return {
+    const defaultData = {
       dateSaisie: "",
       numeroBon: "",
       demandeur: "",
@@ -123,7 +158,7 @@ export default function App() {
       archived: false,
       passages: [{
         id: Date.now().toString(),
-        dateExecution: "",
+        dateExecution: getTodayFormatted(),
         travauxRealises: "",
         tempsPasse: "",
         nomIntervenant: "Christophe Meyer",
@@ -132,10 +167,24 @@ export default function App() {
         autreRaison: ""
       }]
     };
+
+    try {
+      const saved = sessionStorage.getItem('app_formData');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn("Erreur init formData storage:", e);
+    }
+    return defaultData;
   });
 
   const [currentId, setCurrentId] = useState<string | null>(() => {
-    return sessionStorage.getItem('app_currentId');
+    try {
+      return sessionStorage.getItem('app_currentId');
+    } catch (e) {
+      return null;
+    }
   });
 
   const [isExtracting, setIsExtracting] = useState(false);
@@ -167,7 +216,7 @@ export default function App() {
   const [isHoveringFloatingSave, setIsHoveringFloatingSave] = useState(false);
 
   // --- États pour la notification furtive ---
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
+  const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setNotification({ message, type });
@@ -179,6 +228,30 @@ export default function App() {
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
   const [isInitializingSecurity, setIsInitializingSecurity] = useState(true);
+  const [timeSinceLastOpen, setTimeSinceLastOpen] = useState<string>("");
+
+  useEffect(() => {
+    try {
+      const lastOpen = localStorage.getItem('app_last_opening');
+      const now = new Date().getTime();
+  
+      if (lastOpen) {
+        const diff = now - parseInt(lastOpen);
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+        let parts = [];
+        if (days > 0) parts.push(`${days}j`);
+        if (hours > 0 || days > 0) parts.push(`${hours}h`);
+        parts.push(`${seconds}s`);
+  
+        setTimeSinceLastOpen(parts.join(' '));
+      }
+  
+      localStorage.setItem('app_last_opening', now.toString());
+    } catch (e) { console.warn("Erreur initiale localStorage:", e); }
+  }, []);
 
   useEffect(() => {
     const initSecurity = async () => {
@@ -201,17 +274,22 @@ export default function App() {
 
   const handlePinSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const hash = await hashPin(pinInput);
-    const stored = localStorage.getItem('app_pcode');
-    
-    if (hash === stored) {
-      setIsAuthenticated(true);
-      setPinError(false);
-    } else {
+    try {
+      const hash = await hashPin(pinInput);
+      const stored = localStorage.getItem('app_pcode');
+
+      if (hash === stored) {
+        setIsAuthenticated(true);
+        setPinError(false);
+      } else {
+        setPinError(true);
+        setPinInput("");
+        // Petit effet visuel d'erreur
+        setTimeout(() => setPinError(false), 500);
+      }
+    } catch (e) {
+      console.error("Erreur authentification:", e);
       setPinError(true);
-      setPinInput("");
-      // Petit effet visuel d'erreur
-      setTimeout(() => setPinError(false), 500);
     }
   };
 
@@ -227,28 +305,60 @@ export default function App() {
   };
 
   const checkPin = async (val: string) => {
-    const hash = await hashPin(val);
-    const stored = localStorage.getItem('app_pcode');
-    if (hash === stored) {
-      setIsAuthenticated(true);
-    } else {
+    try {
+      const hash = await hashPin(val);
+      const stored = localStorage.getItem('app_pcode');
+      if (hash === stored) {
+        setIsAuthenticated(true);
+      } else {
+        setPinError(true);
+        setPinInput("");
+        setTimeout(() => setPinError(false), 500);
+      }
+    } catch (e) {
+      console.error("Erreur check PIN:", e);
       setPinError(true);
-      setPinInput("");
-      setTimeout(() => setPinError(false), 500);
     }
   };
 
+<<<<<<< HEAD
 
+=======
+  // --- États pour l'alerte des bons en retard ---
+  const [showLateModal, setShowLateModal] = useState(false);
+  const [hasShownLateModal, setHasShownLateModal] = useState(true);
+  const [showPostSaveModal, setShowPostSaveModal] = useState(false);
+
+  // --- États pour la gestion des doublons ---
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateIntervention, setDuplicateIntervention] = useState<any>(null);
+  const [pendingSaveData, setPendingSaveData] = useState<any>(null);
 
   useEffect(() => {
-    if (view === 'saisie') {
-      // Un petit délai pour s'assurer que le DOM est prêt
+    // On n'affiche le modal que si on est authentifié et que les interventions sont chargées
+    if (isAuthenticated && interventions.length > 0 && !hasShownLateModal) {
+      try {
+        const lateOnes = interventions.filter((i: any) => i && !i.archived && isDateOlderThan30Days(i.dateDemande));
+        if (lateOnes.length > 0) {
+          setShowLateModal(true);
+          setHasShownLateModal(true);
+        }
+      } catch (e) {
+        console.error("Erreur calcul bons en retard:", e);
+        setHasShownLateModal(true); // On marque comme montré pour éviter de re-essayer et crasher
+      }
+    }
+  }, [isAuthenticated, interventions, hasShownLateModal]);
+>>>>>>> 27487cdf899f5bb4cff7eb1028e529a79fc39341
+
+  useEffect(() => {
+    if (view === 'saisie' && currentId) {
+      // Un petit délai pour s'assurer que le DOM est prêt (surtout la section conditionnelle)
       setTimeout(() => {
         passagesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+      }, 300);
     }
-  }, [view]);
-
+  }, [view, currentId]);
   const fetchInterventions = async () => {
     if (!import.meta.env.VITE_SUPABASE_URL) {
       setSyncStatus('offline');
@@ -263,19 +373,22 @@ export default function App() {
         .order('dateSaisie', { ascending: false });
 
       if (error) throw error;
-      
+
       if (data) {
-        setInterventions(data.map((i: any) => {
-          // Si la colonne 'archived' n'existe pas en base, on la calcule à partir des passages
-          const hasClosingState = i.passages?.some((p: any) => 
-            p.raisonNouveauPassage === 'Terminé' || 
-            p.raisonNouveauPassage === "Intervention d'une autre entreprise nécessaire"
-          );
-          return {
-            ...i,
-            archived: i.archived ?? hasClosingState ?? false
-          };
-        }));
+        setInterventions(data
+          .filter((i: any) => i !== null && typeof i === 'object' && i.id)
+          .map((i: any) => {
+            // Si la colonne 'archived' n'existe pas en base, on la calcule à partir des passages
+            const hasClosingState = i.passages?.some((p: any) =>
+              p.raisonNouveauPassage === 'Terminé' ||
+              p.raisonNouveauPassage === "Intervention d'une autre entreprise nécessaire"
+            );
+            return {
+              ...i,
+              archived: i.archived ?? hasClosingState ?? false
+            };
+          })
+        );
       }
       setSyncStatus('synced');
     } catch (err) {
@@ -292,10 +405,10 @@ export default function App() {
       // S'abonner aux changements en temps réel
       const channel = supabase
         .channel('db-changes')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'interventions' 
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'interventions'
         }, () => {
           fetchInterventions();
         })
@@ -308,39 +421,55 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    sessionStorage.setItem('app_view', view);
+    try {
+      sessionStorage.setItem('app_view', view);
+    } catch (e) { console.warn("Erreur sessionStorage view:", e); }
   }, [view]);
 
   useEffect(() => {
-    sessionStorage.setItem('app_formData', JSON.stringify(formData));
+    try {
+      sessionStorage.setItem('app_previous_view', previousView);
+    } catch (e) { console.warn("Erreur sessionStorage previousView:", e); }
+  }, [previousView]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('app_formData', JSON.stringify(formData));
+    } catch (e) { console.warn("Erreur sessionStorage formData:", e); }
   }, [formData]);
 
   useEffect(() => {
-    if (currentId) {
-      sessionStorage.setItem('app_currentId', currentId);
-    } else {
-      sessionStorage.removeItem('app_currentId');
-    }
+    try {
+      if (currentId) {
+        sessionStorage.setItem('app_currentId', currentId);
+      } else {
+        sessionStorage.removeItem('app_currentId');
+      }
+    } catch (e) { console.warn("Erreur sessionStorage currentId:", e); }
   }, [currentId]);
 
   useEffect(() => {
-    localStorage.setItem('interventions', JSON.stringify(interventions));
+    try {
+      localStorage.setItem('interventions', JSON.stringify(interventions));
+    } catch (e) {
+      console.warn("Erreur localStorage interventions (quota probable):", e);
+      // On ne crash pas, le state React reste valide pour la session en cours
+    }
   }, [interventions]);
 
   // Fonction de synchronisation unitaire
   const syncIntervention = async (item: any) => {
     if (!import.meta.env.VITE_SUPABASE_URL) return;
-    
+
     setSyncStatus('syncing');
     try {
-      // On retire 'archived' de l'objet envoyé à Supabase car la colonne n'existe pas
-      // L'état archivé sera recalculé au chargement via le contenu des passages
-      const { archived, ...dataToSync } = item;
-      
+      // On retire les champs qui ne sont pas des colonnes en base
+      const { archived, confirmDuplicate, ...dataToSync } = item;
+
       const { error } = await supabase
         .from('interventions')
         .upsert(dataToSync);
-      
+
       if (error) {
         console.error("Erreur Supabase:", error);
         alert(`Erreur de synchronisation : ${error.message}\nCode: ${error.code}`);
@@ -390,9 +519,9 @@ export default function App() {
         const othersComplete = mandatoryFields.filter(f => f !== name).every(f => formData[f] && formData[f].trim() !== "");
         // On ne déclenche la sauvegarde que si ce champ était VIDE avant (donc c'est le dernier rempli)
         const wasEmpty = !formData[name] || formData[name].trim() === "";
-        
+
         if (othersComplete && wasEmpty) {
-          handleSave(nextData);
+          handleSave(nextData, true);
         }
       }
     }
@@ -404,7 +533,7 @@ export default function App() {
     setFormData((prev: any) => {
       const newPassages = prev.passages.map((p: any) => p.id === id ? { ...p, [field]: value } : p);
       const currentPassage = newPassages.find((p: any) => p.id === id);
-      
+
       let nextArchived = prev.archived;
       let shouldTriggerSave = false;
       let shouldAddPassage = false;
@@ -421,11 +550,12 @@ export default function App() {
       };
 
       let finalPassages = newPassages;
-      
+
       // Logique de sauvegarde automatique sans confirmation pour le champ "État / Suite"
       if (field === 'raisonNouveauPassage' && value) {
-        const isClosingState = value === 'Terminé' || value === "Intervention d'une autre entreprise nécessaire";
-        
+        const choices = value.split(', ');
+        const isClosingState = choices.includes('Terminé') || choices.includes("Intervention d'une autre entreprise nécessaire");
+
         if (isClosingState) {
           const missing = getMissingFields(prev, currentPassage);
           if (missing.length > 0) {
@@ -501,32 +631,43 @@ export default function App() {
     }));
   };
 
-  const handleSave = async (dataOverride: any = null) => {
+  const handleSave = async (dataOverride: any = null, showPostModal: boolean = false) => {
     try {
       // Éviter de traiter l'objet événement comme des données si appelé via onClick={handleSave}
       const actualData = (dataOverride && dataOverride.nativeEvent) ? null : dataOverride;
       const dataToValidate = actualData || formData;
       console.log("Starting handleSave with data:", dataToValidate);
-      
-      // Validation: Si un champ du passage est saisi, la date, le temps et l'état deviennent obligatoires
+
+      // --- LOGIQUE DE DOUBLON ---
+      // On cherche si un autre bon possède le même numéro
+      if (dataToValidate.numeroBon) {
+        const duplicate = interventions.find((i: any) => 
+          i && 
+          i.numeroBon === dataToValidate.numeroBon && 
+          i.id !== (actualData?.id || currentId)
+        );
+
+        if (duplicate && !actualData?.confirmDuplicate) {
+          setDuplicateIntervention(duplicate);
+          setPendingSaveData(dataToValidate);
+          setShowDuplicateModal(true);
+          return;
+        }
+      }
+
+      // Validation restrictive : Les 3 champs principaux + les passages
+      if (!dataToValidate.dateSaisie) { alert("Le champ 'Colmar le' est obligatoire."); return; }
+      if (!dataToValidate.numeroBon) { alert("Le champ 'N° de bon' est obligatoire."); return; }
+      if (!dataToValidate.dateDemande) { alert("Le champ 'Date de demande' est obligatoire."); return; }
+
+      // Validation des passages (uniquement en modification pour laisser la saisie initiale libre)
       const passages = dataToValidate.passages || [];
-      for (let i = 0; i < passages.length; i++) {
-        const p = passages[i];
-        const isTouched = p.dateExecution || p.tempsPasse || p.travauxRealises || p.raisonNouveauPassage;
-        
-        if (isTouched) {
-          if (!p.dateExecution) {
-            alert(`Passage #${i+1} : Veuillez renseigner la 'Date d'intervention'.`);
-            return;
-          }
-          if (!p.tempsPasse) {
-            alert(`Passage #${i+1} : Veuillez renseigner le 'Temps passé'.`);
-            return;
-          }
-          if (!p.raisonNouveauPassage) {
-            alert(`Passage #${i+1} : Veuillez sélectionner un 'État / Suite de l'intervention'.`);
-            return;
-          }
+      if (currentId) {
+        for (let i = 0; i < passages.length; i++) {
+          const p = passages[i];
+          if (!p.dateExecution) { alert(`Intervention #${i + 1} : La date est obligatoire.`); return; }
+          if (!p.tempsPasse) { alert(`Intervention #${i + 1} : Le temps passé est obligatoire.`); return; }
+          if (!p.raisonNouveauPassage) { alert(`Intervention #${i + 1} : L'état est obligatoire.`); return; }
         }
       }
 
@@ -538,12 +679,17 @@ export default function App() {
         dataToSave.travauxRealises = dataToSave.passages[0].travauxRealises;
       }
 
-      const newId = currentId || Date.now().toString();
-      const itemToSync = { 
-        ...dataToSave, 
+      const newId = (actualData?.id || currentId) || Date.now().toString();
+      const itemToSync = {
+        ...dataToSave,
         id: newId,
         archived: Boolean(dataToSave.archived)
       };
+
+      // Si on a remplacé un doublon, on s'assure que currentId est mis à jour
+      if (actualData?.id && !currentId) {
+        setCurrentId(actualData.id);
+      }
 
       console.log("Item to save:", itemToSync);
 
@@ -555,18 +701,21 @@ export default function App() {
           return [...prev, itemToSync];
         }
       });
-      
+
       if (!currentId) setCurrentId(newId);
 
       // On attend la fin de la synchronisation avant de quitter
       await syncIntervention(itemToSync);
-      
-      // L'utilisateur souhaite rester sur la page pour consulter
-      showNotification("Sauvegarde automatique effectuée");
-      console.log("Save successful, staying on page for consultation");
-    } catch (error) {
+
+      if (showPostModal) {
+        setShowPostSaveModal(true);
+      } else {
+        showNotification("Sauvegarde automatique effectuée");
+      }
+      console.log("Save successful, modal status:", showPostModal);
+    } catch (error: any) {
       console.error("CRITICAL ERROR in handleSave:", error);
-      alert("Une erreur est survenue lors de la sauvegarde. Détails: " + (error as Error).message);
+      alert("Une erreur est survenue lors de la sauvegarde. Détails: " + (error?.message || "Erreur inconnue"));
     }
   };
 
@@ -581,19 +730,39 @@ export default function App() {
   const uploadImage = async (file: File | Blob): Promise<string | null> => {
     try {
       const fileName = `photo_${Date.now()}.png`;
+      const filePath = `scans/${fileName}`;
+      console.log(`[Storage] Tentative d'upload: ${filePath} (${file.size} octets)`);
+      
       const { data, error } = await supabase.storage
         .from('interventions-photos')
-        .upload(fileName, file);
+        .upload(filePath, file, { upsert: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[Storage] Erreur d'upload:", error);
+        throw error;
+      }
+      
+      console.log("[Storage] Upload réussi, data:", data);
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: signedData, error: signedError } = await supabase.storage
         .from('interventions-photos')
-        .getPublicUrl(fileName);
+        .createSignedUrl(filePath, 315360000); // 10 ans
 
-      return publicUrl;
-    } catch (err) {
+      if (signedError) {
+        console.error("[Storage] Erreur lien signé:", signedError);
+        // Fallback sur URL publique si le lien signé échoue
+        const { data: { publicUrl } } = supabase.storage
+          .from('interventions-photos')
+          .getPublicUrl(filePath);
+        console.log("[Storage] Fallback URL publique:", publicUrl);
+        return publicUrl;
+      }
+
+      console.log("[Storage] Upload réussi, Lien signé obtenu.");
+      return signedData.signedUrl;
+    } catch (err: any) {
       console.error("Erreur d'upload image:", err);
+      alert("Échec de l'enregistrement de l'image sur le serveur. Détails: " + (err.message || "Erreur inconnue"));
       return null;
     }
   };
@@ -613,9 +782,35 @@ export default function App() {
         throw new Error("L'image est vraiment trop lourde (plus de 25 Mo).");
       }
 
+      setExtractStep("Orientation...");
+      // Forcer le mode portrait si l'image est en paysage
+      let portraitFile = file;
+      try {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+        URL.revokeObjectURL(img.src);
+
+        if (img.width > img.height) {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.height;
+          canvas.height = img.width;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(img, -img.width / 2, -img.height / 2);
+            const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+            if (blob) portraitFile = new File([blob], file.name, { type: 'image/jpeg' });
+          }
+        }
+      } catch (e) {
+        console.warn("Erreur lors de la rotation portrait:", e);
+      }
+
       setExtractStep("Compression...");
       // Wrap compression in a safe try/catch
-      let processedFile = file;
+      let processedFile = portraitFile;
       try {
         const options = {
           maxSizeMB: 1, // Compress to ~1MB (perfect for AI without losing readability)
@@ -623,15 +818,35 @@ export default function App() {
           useWebWorker: true, // Prevents locking the UI thread
           fileType: "image/jpeg"
         };
-        processedFile = await imageCompression(file, options);
+        processedFile = await imageCompression(portraitFile, options);
       } catch (err) {
         console.warn("Échec de la compression, utilisation de l'image originale:", err);
       }
 
       setExtractStep("Sauvegarde image...");
+      
+      const oldPhotoUrl = formData.photo_url;
       const photoUrl = await uploadImage(processedFile);
+      
       if (photoUrl) {
         setFormData(prev => ({ ...prev, photo_url: photoUrl }));
+        
+        // Suppression de l'ancienne photo UNIQUEMENT si le nouvel upload a réussi
+        if (oldPhotoUrl && oldPhotoUrl.includes('/interventions-photos/')) {
+          try {
+            const oldPath = oldPhotoUrl.split('/interventions-photos/')[1];
+            if (oldPath) {
+              await supabase.storage.from('interventions-photos').remove([oldPath]);
+            }
+          } catch (err) {
+            console.error("Erreur lors de la suppression de l'ancienne photo:", err);
+          }
+        }
+      } else {
+        // Si l'upload a échoué, on annule le scan pour éviter de sauvegarder un bon sans photo ou avec une photo morte
+        setIsExtracting(false);
+        setExtractionError("La photo n'a pas pu être sauvegardée sur le serveur. Abandon de l'analyse.");
+        return;
       }
 
 
@@ -645,15 +860,15 @@ export default function App() {
 
       const base64 = base64Data.split(',')[1];
       const mimeType = processedFile.type || 'image/jpeg';
-      
+
       console.log(`[Diagnostic] Taille finale avant envoi: ${processedFile.size} octets. Type: ${mimeType}`);
 
       setExtractStep("Envoi à l'IA...");
-      
+
       if (!API_KEY) {
         throw new Error("La clé API Gemini n'est pas configurée.");
       }
-      
+
       // Liste des modèles DÉTECTÉS via votre diagnostic (Vérifié !)
       const modelsToTry = [
         "gemini-2.0-flash",
@@ -678,7 +893,7 @@ export default function App() {
           setExtractStep(`Analyse (${modelName})...`);
 
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
-          
+
           const payload = {
             contents: [{
               parts: [
@@ -695,12 +910,12 @@ export default function App() {
             body: JSON.stringify(payload)
           });
 
-          const timeoutPromise = new Promise<any>((_, reject) => 
+          const timeoutPromise = new Promise<any>((_, reject) =>
             setTimeout(() => reject(new Error("Timeout")), 30000)
           );
 
           const responseRaw: any = await Promise.race([fetchPromise, timeoutPromise]);
-          
+
           if (!responseRaw.ok) {
             const errorText = await responseRaw.text();
             throw new Error(errorText);
@@ -725,10 +940,10 @@ export default function App() {
         if (text.startsWith("```json")) text = text.replace(/^```json/, "");
         if (text.startsWith("```")) text = text.replace(/^```/, "");
         if (text.endsWith("```")) text = text.replace(/```$/, "");
-        
+
         try {
           const extractedData = JSON.parse(text);
-          
+
           // Vérifier si l'IA a vraiment trouvé quelque chose
           const hasData = Object.values(extractedData).some(val => val && String(val).trim() !== "");
           if (!hasData) {
@@ -736,48 +951,42 @@ export default function App() {
             return;
           }
 
-          let finalDataForSave: any = null;
-
-          setFormData((prev: any) => {
-            const newData = { ...prev };
-            // On ne met à jour que les champs où l'IA a trouvé quelque chose de non-vide
-            Object.keys(extractedData).forEach(key => {
-              if (extractedData[key] && extractedData[key].trim() !== "") {
-                newData[key] = extractedData[key];
-              }
-            });
-            
-            if (newData.passages && newData.passages.length > 0) {
-              newData.passages = [...newData.passages];
-              newData.passages[0] = {
-                ...newData.passages[0],
-                dateExecution: extractedData.dateExecution || newData.passages[0].dateExecution,
-                travauxRealises: extractedData.travauxRealises || newData.passages[0].travauxRealises,
-                tempsPasse: extractedData.tempsPasse || newData.passages[0].tempsPasse,
-                nomIntervenant: extractedData.nomIntervenant || newData.passages[0].nomIntervenant,
-              };
+          // Calculer les nouvelles données pour mise à jour et sauvegarde
+          // On s'assure d'utiliser le photoUrl fraîchement uploadé
+          const newData = { ...formData, photo_url: photoUrl || formData.photo_url };
+          Object.keys(extractedData).forEach(key => {
+            if (extractedData[key] && extractedData[key].trim() !== "") {
+              newData[key] = extractedData[key];
             }
-            finalDataForSave = newData;
-            setIsAiProcessed(true); // Marquage comme traité par IA
-            return newData;
           });
+
+          if (newData.passages && newData.passages.length > 0) {
+            newData.passages = [...newData.passages];
+            newData.passages[0] = {
+              ...newData.passages[0],
+              dateExecution: extractedData.dateExecution || newData.passages[0].dateExecution,
+              travauxRealises: extractedData.travauxRealises || newData.passages[0].travauxRealises,
+              tempsPasse: extractedData.tempsPasse || newData.passages[0].tempsPasse,
+              nomIntervenant: extractedData.nomIntervenant || newData.passages[0].nomIntervenant,
+            };
+          }
+
+          setFormData(newData);
+          setIsAiProcessed(true);
 
           // Vérification des champs obligatoires et sauvegarde automatique
           setTimeout(() => {
-            if (finalDataForSave) {
-              const missing = [];
-              if (!finalDataForSave.dateSaisie) missing.push("'Colmar le'");
-              if (!finalDataForSave.dateDemande) missing.push("'Date de demande'");
-              if (!finalDataForSave.numeroBon) missing.push("'N° de bon'");
-              
-              if (missing.length > 0) {
-                alert("L'analyse est terminée mais des champs obligatoires sont manquants : " + missing.join(", ") + ". Veuillez les compléter pour enregistrer.");
-              } else {
-                // Sauvegarde automatique directe
-                handleSave(finalDataForSave);
-              }
+            const missing = [];
+            if (!newData.dateSaisie) missing.push("'Colmar le'");
+            if (!newData.dateDemande) missing.push("'Date de demande'");
+            if (!newData.numeroBon) missing.push("'N° de bon'");
+
+            if (missing.length > 0) {
+              alert("L'analyse est terminée mais des champs obligatoires sont manquants : " + missing.join(", ") + ". Veuillez les compléter pour enregistrer.");
+            } else {
+              handleSave(newData, true);
             }
-          }, 800);
+          }, 500);
 
         } catch (parseError: any) {
           console.error("JSON Parse Error:", parseError, "Text:", text);
@@ -790,7 +999,7 @@ export default function App() {
     } catch (error: any) {
       console.error("Extraction error:", error);
       let errorMessage = error?.message || "Erreur de connexion lors du traitement.";
-      
+
       try {
         if (errorMessage.includes('{')) {
           const start = errorMessage.indexOf('{');
@@ -800,7 +1009,7 @@ export default function App() {
             errorMessage = parsed.error.message;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       setExtractionError(errorMessage);
     } finally {
@@ -810,22 +1019,46 @@ export default function App() {
 
   const handleDevisPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-    
+
     setIsUploadingDevis(true);
     try {
       const files = Array.from(e.target.files) as File[];
       const newPhotos: string[] = [];
-      
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        // Forcer le mode portrait si l'image est en paysage
+        let portraitFile = file;
+        try {
+          const img = new Image();
+          img.src = URL.createObjectURL(file);
+          await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+          URL.revokeObjectURL(img.src);
+
+          if (img.width > img.height) {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.height;
+            canvas.height = img.width;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.translate(canvas.width / 2, canvas.height / 2);
+              ctx.rotate(Math.PI / 2);
+              ctx.drawImage(img, -img.width / 2, -img.height / 2);
+              const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+              if (blob) portraitFile = new File([blob], file.name, { type: 'image/jpeg' });
+            }
+          }
+        } catch (e) {
+          console.warn("Erreur lors de la rotation portrait (devis):", e);
+        }
+
         const options = {
           maxSizeMB: 0.7,
           maxWidthOrHeight: 1280,
           useWebWorker: true,
           fileType: "image/jpeg"
         };
-        const compressedFile = await imageCompression(file, options);
-        
+        const compressedFile = await imageCompression(portraitFile, options);
+
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
@@ -835,7 +1068,7 @@ export default function App() {
         newPhotos.push(dataUrl);
 
       }
-      
+
       setPendingDevisPhotos(prev => [...prev, ...newPhotos]);
     } catch (err: any) {
       console.error("Erreur capture photos:", err);
@@ -847,43 +1080,43 @@ export default function App() {
 
   const generateFinalDevisPDF = async () => {
     if (pendingDevisPhotos.length === 0) return;
-    
+
     setIsUploadingDevis(true);
     try {
       const pdf = new jsPDF();
-      
+
       for (let i = 0; i < pendingDevisPhotos.length; i++) {
         if (i > 0) pdf.addPage();
-        
+
         const dataUrl = pendingDevisPhotos[i];
         const imgProps = pdf.getImageProperties(dataUrl);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         pdf.addImage(dataUrl, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       }
-      
+
       const pdfBlob = pdf.output('blob');
       const fileName = `devis_${currentId || 'new'}_${Date.now()}.pdf`;
       const filePath = `${currentId || 'temp'}/${fileName}`;
-      
+
       const { data, error } = await supabase.storage
         .from('devis')
         .upload(filePath, pdfBlob);
-        
+
       if (error) throw error;
-      
+
       const { data: { publicUrl } } = supabase.storage
         .from('devis')
         .getPublicUrl(filePath);
-        
+
       const updatedData = { ...formData, urlDevis: publicUrl };
       setFormData(updatedData);
       setPendingDevisPhotos([]); // Vider le buffer
-      
+
       if (currentId) {
         syncIntervention({ ...updatedData, id: currentId });
       }
-      
+
       alert("Devis PDF généré avec succès ! (" + pendingDevisPhotos.length + " pages)");
     } catch (err: any) {
       console.error("Erreur génération PDF:", err);
@@ -895,11 +1128,11 @@ export default function App() {
 
   const removeDevis = async () => {
     if (!window.confirm("Voulez-vous vraiment supprimer ce devis ?")) return;
-    
+
     const oldUrl = formData.urlDevis;
     const updatedData = { ...formData, urlDevis: null };
     setFormData(updatedData);
-    
+
     if (currentId) {
       syncIntervention({ ...updatedData, id: currentId });
     }
@@ -913,7 +1146,34 @@ export default function App() {
           await supabase.storage.from('devis').remove([filePath]);
         }
       } catch (err) {
-        console.error("Erreur lors de la suppression du fichier storage:", err);
+        console.error("Erreur lors de la suppression du fichier storage (devis):", err);
+      }
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!window.confirm("Voulez-vous vraiment supprimer la photo du bon ?")) return;
+
+    const oldUrl = formData.photo_url;
+    const updatedData = { ...formData, photo_url: null };
+    setFormData(updatedData);
+
+    if (currentId) {
+      syncIntervention({ ...updatedData, id: currentId });
+    }
+
+    // Tentative de suppression du fichier physique dans Storage
+    if (oldUrl) {
+      try {
+        const bucketName = 'interventions-photos';
+        if (oldUrl.includes(`/${bucketName}/`)) {
+          const filePath = oldUrl.split(`/${bucketName}/`)[1];
+          if (filePath) {
+            await supabase.storage.from(bucketName).remove([filePath]);
+          }
+        }
+      } catch (err) {
+        console.error("Erreur lors de la suppression du fichier storage (photo):", err);
       }
     }
   };
@@ -923,7 +1183,7 @@ export default function App() {
     setIsExtracting(false);
     setIsAiProcessed(false); // Reset de l'état IA pour une nouvelle saisie ou modif manuelle
     setFocusedElement({ id: "", rect: null });
-    
+
     // Ignorer si c'est un objet événement
     if (data && data.nativeEvent) data = null;
 
@@ -973,7 +1233,7 @@ export default function App() {
         archived: false,
         passages: [{
           id: Date.now().toString(),
-          dateExecution: "",
+          dateExecution: getTodayFormatted(),
           travauxRealises: "",
           tempsPasse: "",
           nomIntervenant: "Christophe Meyer",
@@ -984,13 +1244,16 @@ export default function App() {
       });
       setCurrentId(null);
     }
+    if (view !== 'saisie') {
+      setPreviousView(view);
+    }
     setView('saisie');
   };
 
   const handleFieldFocus = (e: any) => {
     if (formData.archived) return;
     if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
-    
+
     const fieldId = e.target.name || e.target.id;
     const rect = e.target.getBoundingClientRect();
     setFocusedElement({ id: fieldId, rect });
@@ -1002,9 +1265,9 @@ export default function App() {
 
   const FloatingSaveButton = () => {
     if (formData.archived || !focusedElement.id || !focusedElement.rect) return null;
-    
+
     return (
-      <div 
+      <div
         className="fixed z-[1000] transition-all duration-300 ease-out pointer-events-auto"
         style={{
           left: focusedElement.rect.left + focusedElement.rect.width / 2,
@@ -1017,7 +1280,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => {
-            handleSave();
+            handleSave(null, true);
             setFocusedElement({ id: "", rect: null });
           }}
           className="bg-[#daa520] text-black px-4 py-2 rounded-full shadow-2xl border-2 border-black/20 font-black text-[10px] uppercase tracking-wider flex items-center gap-2 hover:bg-[#ffb700] hover:scale-110 active:scale-95 transition-all animate-fade-in-down"
@@ -1028,14 +1291,168 @@ export default function App() {
     );
   };
 
+<<<<<<< HEAD
 
+=======
+  const LateInterventionsModal = () => {
+    if (!showLateModal) return null;
+
+    const lateOnes = interventions.filter((i: any) => i && !i.archived && isDateOlderThan30Days(i.dateDemande));
+    if (lateOnes.length === 0) return null;
+
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowLateModal(false)}></div>
+        <div className="bg-[#1B263B] w-full max-w-lg rounded-2xl border-2 border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.3)] overflow-hidden relative animate-modal-in">
+          <div className="bg-red-500 p-4 flex items-center gap-3 shadow-lg">
+            <ShieldCheck className="text-white w-6 h-6" />
+            <h2 className="text-white font-black uppercase tracking-tighter text-lg">Alertes : Bons en retard</h2>
+          </div>
+          <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <p className="text-slate-400 text-[10px] font-bold uppercase mb-4 tracking-widest opacity-70">Les interventions suivantes dépassent les 30 jours :</p>
+            <div className="space-y-3">
+              {lateOnes.map((i: any) => (
+                <div key={i.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex justify-between items-center hover:bg-white/10 transition-colors">
+                  <div>
+                    <button
+                      onClick={() => {
+                        handleOpenSaisie(i);
+                        setShowLateModal(false);
+                      }}
+                      className="text-[#daa520] font-black text-sm hover:underline flex items-center gap-2"
+                    >
+                      {i.numeroBon ? `BON N°${i.numeroBon}` : "BON SANS N°"}
+                    </button>
+                  </div>
+                  <div className="text-right">
+                    <span className="bg-red-500/20 text-red-400 text-[10px] font-black px-2 py-1 rounded-full border border-red-500/30">
+                      +{getDaysElapsed(i.dateDemande)} JOURS
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="p-4 border-t border-white/5 bg-white/5 flex justify-end">
+            <button
+              onClick={() => setShowLateModal(false)}
+              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-black uppercase rounded-lg transition-all"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+>>>>>>> 27487cdf899f5bb4cff7eb1028e529a79fc39341
+
+  // --- Composant Modal de confirmation post-sauvegarde ---
+  const renderPostSaveModal = () => {
+    if (!showPostSaveModal) return null;
+
+    return (
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowPostSaveModal(false)}></div>
+        <div className="bg-[#1B263B] w-full max-w-md rounded-2xl border-2 border-[#daa520]/50 shadow-[0_0_50px_rgba(218,165,32,0.3)] overflow-hidden relative animate-modal-in">
+          <div className="bg-[#daa520] p-4 flex items-center gap-3 shadow-lg">
+            <ShieldCheck className="text-black w-6 h-6" />
+            <h2 className="text-black font-black uppercase tracking-tighter text-lg">Bon enregistré</h2>
+          </div>
+          <div className="p-8 text-center">
+            <p className="text-white font-bold mb-8">Voulez-vous enregistrer un autre bon ?</p>
+            <div className="flex flex-col gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPostSaveModal(false);
+                  handleOpenSaisie(); // Nouvelle saisie
+                }}
+                className="w-full bg-[#daa520] hover:bg-[#ffb700] text-black font-black py-4 rounded-xl uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3"
+              >
+                <Camera size={20} /> Oui, enregistrer un autre bon
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPostSaveModal(false);
+                  setView('consultation'); // Consultation
+                }}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all flex items-center justify-center gap-3"
+              >
+                <ClipboardList size={20} /> Non, voir les bons
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // --- Composant Modal de détection de doublon ---
+  const DuplicateModal = () => {
+    if (!showDuplicateModal || !duplicateIntervention) return null;
+
+    return (
+      <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowDuplicateModal(false)}></div>
+        <div className="bg-[#1B263B] w-full max-w-md rounded-2xl border-2 border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.3)] overflow-hidden relative animate-modal-in">
+          <div className="bg-red-500 p-4 flex items-center gap-3 shadow-lg">
+            <ShieldCheck className="text-white w-6 h-6" />
+            <h2 className="text-white font-black uppercase tracking-tighter text-lg">Doublon détecté</h2>
+          </div>
+          <div className="p-8 text-center">
+            <div className="mb-6">
+              <p className="text-white font-black text-xl mb-2">Attention !</p>
+              <p className="text-slate-300 text-sm">
+                Le numéro de bon <span className="text-[#daa520] font-black">{duplicateIntervention.numeroBon}</span> est déjà enregistré dans la base de données.
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDuplicateModal(false);
+                  handleOpenSaisie(duplicateIntervention);
+                }}
+                className="w-full bg-[#daa520] hover:bg-[#ffb700] text-black font-black py-4 rounded-xl uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3"
+              >
+                <ClipboardList size={20} /> Ouvrir le bon existant
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDuplicateModal(false);
+                  // On remplace en utilisant l'ID de l'ancien bon pour l'écraser
+                  handleSave({ ...pendingSaveData, id: duplicateIntervention.id, confirmDuplicate: true }, true);
+                }}
+                className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3"
+              >
+                <Trash2 size={20} /> Remplacer et supprimer l'ancien
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowDuplicateModal(false)}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-3 rounded-xl uppercase text-xs transition-all"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderMenu = () => (
     <div className="w-full max-w-lg bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg overflow-hidden">
       <div className="bg-[#1B263B] p-5 border-b border-white/5">
         <div className="flex items-center gap-4">
-          <button 
-            onClick={fetchInterventions} 
+          <button
+            onClick={fetchInterventions}
             className="relative flex-shrink-0 group transition-transform active:scale-95"
             title="Rafraîchir les données"
           >
@@ -1047,7 +1464,7 @@ export default function App() {
               {syncStatus === 'offline' && <CloudOff size={16} className="text-slate-500" />}
             </div>
           </button>
-          
+
           <h1 className="text-xl font-black tracking-widest flex items-center gap-2">
             <span className="text-white uppercase">Maintenance</span>
             <span className="text-[#daa520] uppercase">Colmar</span>
@@ -1055,95 +1472,96 @@ export default function App() {
         </div>
       </div>
       <div className="p-8">
-      <div className="space-y-6 pb-2">
-        <button 
-          onClick={() => handleOpenSaisie()} 
-          className="w-full bg-gradient-to-r from-[#b8860b] via-[#ffd700] to-[#daa520] text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:brightness-105 transition-all group border border-[#daa520]/30"
-        >
-          <div className="flex items-center gap-4 px-6 py-4 w-full">
-            <div className="bg-black/5 p-2 rounded-lg">
-              <ClipboardEdit size={40} strokeWidth={1.2} className="text-black/80" />
+        <div className="space-y-6 pb-2">
+          <button
+            onClick={() => handleOpenSaisie()}
+            className="w-full bg-gradient-to-r from-[#b8860b] via-[#ffd700] to-[#daa520] text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:brightness-105 transition-all group border border-[#daa520]/30"
+          >
+            <div className="flex items-center gap-4 px-6 py-4 w-full">
+              <div className="bg-black/5 p-2 rounded-lg">
+                <ClipboardEdit size={40} strokeWidth={1.2} className="text-black/80" />
+              </div>
+              <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
+                Saisie des bons d'interventions
+              </span>
+              <ChevronRight size={32} className="text-white drop-shadow-md" strokeWidth={3} />
             </div>
-            <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
-              Saisie des bons d'interventions
-            </span>
-            <ChevronRight size={32} className="text-white drop-shadow-md" strokeWidth={3} />
-          </div>
-        </button>
-        <button 
-          onClick={() => setView('consultation')} 
-          className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
-        >
-          <div className="flex items-center gap-4 px-6 py-4 w-full">
-            <div className="bg-black/5 p-2 rounded-lg">
-              <ClipboardList size={40} strokeWidth={1.2} className="text-black/80" />
+          </button>
+          <button
+            onClick={() => { setPreviousView('menu'); setView('consultation'); }}
+            className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
+          >
+            <div className="flex items-center gap-4 px-6 py-4 w-full">
+              <div className="bg-black/5 p-2 rounded-lg">
+                <ClipboardList size={40} strokeWidth={1.2} className="text-black/80" />
+              </div>
+              <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
+                Consultation des interventions
+              </span>
+              <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
             </div>
-            <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
-              Consultation des interventions
-            </span>
-            <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
-          </div>
-        </button>
+          </button>
 
-        <button 
-          onClick={() => {
-            setSearchQuery("");
-            setSearchStartDate("");
-            setSearchEndDate(getTodayFormatted());
-            setView('recherche');
-          }} 
-          className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
-        >
-          <div className="flex items-center gap-4 px-6 py-4 w-full">
-            <div className="bg-black/5 p-2 rounded-lg">
-              <Database size={40} strokeWidth={1.2} className="text-black/80" />
+          <button
+            onClick={() => {
+              setSearchQuery("");
+              setSearchStartDate("");
+              setSearchEndDate(getTodayFormatted());
+              setPreviousView('menu');
+              setView('recherche');
+            }}
+            className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
+          >
+            <div className="flex items-center gap-4 px-6 py-4 w-full">
+              <div className="bg-black/5 p-2 rounded-lg">
+                <Database size={40} strokeWidth={1.2} className="text-black/80" />
+              </div>
+              <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
+                Recherche d'intervention
+              </span>
+              <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
             </div>
-            <span className="flex-grow text-left text-lg font-black uppercase tracking-tighter leading-tight">
-              Recherche d'intervention
-            </span>
-            <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
-          </div>
-        </button>
+          </button>
 
-        <button 
-          onClick={() => setView('stats')} 
-          className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
-        >
-          <div className="flex items-center gap-4 px-6 py-4 w-full">
-            <div className="bg-black/5 p-2 rounded-lg">
-              <BarChart3 size={40} strokeWidth={1.2} className="text-black/80" />
-            </div>
-            <span className="text-left text-lg font-black uppercase tracking-tighter leading-tight mr-4">
-              Statistiques
-            </span>
-            
-            {/* Mini Dashboard Style as per image */}
-            <div className="flex-grow flex items-center justify-end gap-6 pr-4 border-l border-slate-200 pl-4 py-1">
-              <div className="hidden sm:block">
-                <p className="text-[8px] font-bold text-slate-500 uppercase mb-1">Statut de flotte</p>
-                <div className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="text-[8px] font-bold">OK</span></div>
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#daa520]"></div><span className="text-[8px] font-bold">ATTENTION</span></div>
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div><span className="text-[8px] font-bold">CRITICAL</span></div>
+          <button
+            onClick={() => { setPreviousView('menu'); setView('stats'); }}
+            className="w-full bg-slate-50 text-black rounded-[2rem] flex items-center justify-between p-1 shadow-xl hover:bg-white transition-all group border border-slate-200"
+          >
+            <div className="flex items-center gap-4 px-6 py-4 w-full">
+              <div className="bg-black/5 p-2 rounded-lg">
+                <BarChart3 size={40} strokeWidth={1.2} className="text-black/80" />
+              </div>
+              <span className="text-left text-lg font-black uppercase tracking-tighter leading-tight mr-4">
+                Statistiques
+              </span>
+
+              {/* Mini Dashboard Style as per image */}
+              <div className="flex-grow flex items-center justify-end gap-6 pr-4 border-l border-slate-200 pl-4 py-1">
+                <div className="hidden sm:block">
+                  <p className="text-[8px] font-bold text-slate-500 uppercase mb-1">Statut de flotte</p>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="text-[8px] font-bold">OK</span></div>
+                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#daa520]"></div><span className="text-[8px] font-bold">ATTENTION</span></div>
+                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div><span className="text-[8px] font-bold">CRITICAL</span></div>
+                  </div>
+                </div>
+                <div className="hidden md:block">
+                  <p className="text-[8px] font-bold text-slate-500 uppercase mb-1">Dernières actions</p>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[7px] font-bold">Brief - approves</span>
+                    <span className="text-[7px] font-bold">Brief - news</span>
+                    <span className="text-[7px] font-bold">Brief - interventions</span>
+                  </div>
                 </div>
               </div>
-              <div className="hidden md:block">
-                <p className="text-[8px] font-bold text-slate-500 uppercase mb-1">Dernières actions</p>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[7px] font-bold">Brief - approves</span>
-                  <span className="text-[7px] font-bold">Brief - news</span>
-                  <span className="text-[7px] font-bold">Brief - interventions</span>
-                </div>
-              </div>
+
+              <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
             </div>
-            
-            <ChevronRight size={32} className="text-[#daa520] drop-shadow-sm" strokeWidth={3} />
-          </div>
-        </button>
-      </div>
-      <div className="mt-8 pt-4 border-t border-slate-200 flex justify-center">
-        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Système Industriel v2.5</p>
-      </div>
+          </button>
+        </div>
+        <div className="mt-8 pt-4 border-t border-slate-200 flex justify-center">
+          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Système Industriel v2.5</p>
+        </div>
       </div>
     </div>
   );
@@ -1152,421 +1570,550 @@ export default function App() {
     const isArchived = Boolean(formData.archived);
 
     return (
-    <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
-      <div ref={formTopRef} className="absolute -top-20" />
-      <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b border-white/5 shadow-md">
-        <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
-          <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm transition-colors">← MENU</button>
-          <div>
-            <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">
-              {isArchived ? "Bon archivé" : (currentId ? "Saisie intervention" : "Saisie des bons")}
-            </h1>
-            <p className="text-[10px] md:text-xs text-[#daa520]/80 font-black uppercase tracking-widest">Maintenance Control</p>
+      <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
+        <div ref={formTopRef} className="absolute -top-20" />
+        <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 flex flex-col sm:flex-row gap-4 justify-between items-center text-center sm:text-left border-b border-white/5 shadow-md">
+          <div className="flex w-full sm:w-auto justify-between sm:justify-start items-center gap-4">
+            <button onClick={() => setView(previousView)} className="text-slate-400 hover:text-[#daa520] font-bold text-sm transition-colors uppercase">← Précédent</button>
+            <div>
+              <h1 className="text-lg md:text-xl font-black tracking-tighter uppercase leading-tight">
+                {isArchived ? "Bon archivé" : (currentId ? "Saisie intervention" : "Saisie des bons")}
+              </h1>
+              <p className="text-[10px] md:text-xs text-[#daa520]/80 font-black uppercase tracking-widest">Maintenance Control</p>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
-           {!currentId && (
-             <>
-               {/* Input specifically for Camera */}
-               <input type="file" accept="image/*" capture="environment" onChange={(e) => {
-                 if (e.target.files && e.target.files.length > 0) {
-                   processImage(e.target.files[0]);
-                 }
-               }} className="hidden" id="photo-upload-camera" />
-               
-               <div className="flex gap-2 w-full sm:w-auto">
-                 <label htmlFor="photo-upload-camera" className={`flex-1 sm:flex-none cursor-pointer bg-white/10 hover:bg-white/20 active:scale-95 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-white/20 transition-all ${isExtracting ? 'opacity-50 pointer-events-none' : ''}`}>
-                   <span className="text-lg">📷</span>
-                   {isExtracting ? (extractStep || '...') : 'Photo du bon'}
-                 </label>
+          <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
+            {formData.photo_url && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (formData.photo_url) {
+                    // Affichage de l'URL pour diagnostic si besoin (décommenter si le 404 persiste)
+                    // alert("URL du bon : " + formData.photo_url);
+                    window.open(formData.photo_url, '_blank');
+                  } else {
+                    alert("Aucune URL de photo disponible.");
+                  }
+                }}
+                className="flex-1 sm:flex-none bg-[#daa520] hover:bg-[#ffb700] text-black px-4 py-2 rounded-lg text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+              >
+                <Camera size={16} /> Voir le bon
+              </button>
+            )}
+            {!formData.archived && (
+              <>
+                {/* Input specifically for Camera */}
+                <input type="file" accept="image/*" capture="environment" onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    processImage(e.target.files[0]);
+                  }
+                }} className="hidden" id="photo-upload-camera" />
+
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <label htmlFor="photo-upload-camera" className={`flex-1 sm:flex-none cursor-pointer bg-white/10 hover:bg-white/20 active:scale-95 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-white/20 transition-all ${isExtracting ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <span className="text-lg">📷</span>
+                    {isExtracting ? (extractStep || '...') : 'Scanner un bon'}
+                  </label>
+                </div>
+              </>
+            )}
+          </div>
+          {formData.numeroBon && (
+            <div className="w-full text-center sm:text-right mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
+              <span className="text-[10px] md:text-xs font-black text-[#daa520] uppercase tracking-widest bg-[#daa520]/10 px-3 py-1 rounded-full border border-[#daa520]/20">
+                N° de bon : {formData.numeroBon}
+              </span>
+            </div>
+          )}
+        </header>
+
+        {formData.photo_url && (
+          <div className="mx-4 md:mx-6 mt-4">
+            <div className="bg-[#1B263B]/30 rounded-xl border border-[#daa520]/20 p-2 flex items-center gap-4 overflow-hidden shadow-inner">
+               <div className="relative group flex-shrink-0">
+                 <img 
+                   src={formData.photo_url} 
+                   alt="Source"
+                   className="w-16 h-16 rounded object-cover cursor-pointer border border-white/10 group-hover:brightness-110 transition-all" 
+                   onClick={() => window.open(formData.photo_url, '_blank')}
+                 />
+                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                   <Camera size={16} className="text-[#daa520]" />
+                 </div>
                </div>
-             </>
-           )}
-        </div>
-        {formData.numeroBon && (
-          <div className="w-full text-center sm:text-right mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
-            <span className="text-[10px] md:text-xs font-black text-[#daa520] uppercase tracking-widest bg-[#daa520]/10 px-3 py-1 rounded-full border border-[#daa520]/20">
-              N° de bon : {formData.numeroBon}
-            </span>
+               <div className="flex-grow">
+                 <p className="text-[10px] font-black text-[#daa520] uppercase tracking-widest leading-none mb-1">Document original scanné</p>
+                 <p className="text-white text-[10px] opacity-60 uppercase font-bold">Cliquez pour agrandir et vérifier les informations</p>
+               </div>
+               <button 
+                 type="button"
+                 onClick={() => window.open(formData.photo_url, '_blank')}
+                 className="p-3 text-[#daa520] hover:bg-white/5 rounded-xl transition-colors"
+               >
+                 <ChevronRight size={24} />
+               </button>
+            </div>
           </div>
         )}
-      </header>
-      
-      {extractionError && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 m-4" role="alert">
-          <p className="font-bold">Erreur d'analyse</p>
-          <p className="text-sm">{extractionError}</p>
-        </div>
-      )}
 
-      <form 
-        className="p-4 md:p-6 space-y-3"
-        onFocusCapture={handleFieldFocus}
-      >
-        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
-          <button 
-            type="button"
-            onClick={() => setCollapsedSections(prev => ({ ...prev, admin: !prev.admin }))}
-            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
-          >
-            <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
-              <FileText size={16} /> Données Administratives
-            </h3>
-            {collapsedSections.admin ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
-          </button>
-          
-          {!collapsedSections.admin && (
-            <div className="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/5 pt-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Colmar le <span className="text-red-500">*</span></label>
-                <input name="dateSaisie" value={formData.dateSaisie} onChange={handleChange} disabled={isArchived} type="date" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">N° de bon <span className="text-red-500">*</span></label>
-                <div className="flex gap-2">
-                  <input name="numeroBon" value={formData.numeroBon} onChange={handleChange} disabled={isArchived} type="text" className="flex-grow border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
-                  {formData.photo_url && (
-                    <button 
-                      type="button" 
-                      onClick={() => window.open(formData.photo_url, '_blank')}
-                      className="bg-[#daa520] hover:bg-[#ffb700] text-black text-[10px] font-black px-3 py-1.5 rounded uppercase flex items-center gap-1 transition-all shadow-sm"
-                    >
-                      <Camera size={14} /> Bons Photos
-                    </button>
-                  )}
-                </div>
-              </div></div>
-          )}
-        </div>
-        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
-          <div className="p-3">
-            <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2 mb-4">
-              <User size={16} /> Informations Demandeur
-            </h3>
-            
-            {/* Priority Fields: Always visible */}
-            <div className="space-y-4 mb-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">
-                  Demandeur
-                </label>
-                <input 
-                  name="demandeur" 
-                  value={formData.demandeur} 
-                  onChange={handleChange} 
-                  disabled={isArchived} 
-                  type="text" 
-                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" 
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {extractionError && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 m-4" role="alert">
+            <p className="font-bold">Erreur d'analyse</p>
+            <p className="text-sm">{extractionError}</p>
+          </div>
+        )}
+
+        <form
+          className="p-4 md:p-6 space-y-3"
+          onFocusCapture={handleFieldFocus}
+        >
+          <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setCollapsedSections(prev => ({ ...prev, admin: !prev.admin }))}
+              className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+            >
+              <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
+                <FileText size={16} /> Données Administratives
+              </h3>
+              {collapsedSections.admin ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
+            </button>
+
+            {!collapsedSections.admin && (
+              <div className="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/5 pt-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Date de demande <span className="text-red-500">*</span></label>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Colmar le <span className="text-red-500">*</span></label>
                   <input 
-                    name="dateDemande" 
-                    value={formData.dateDemande} 
+                    name="dateSaisie" 
+                    value={formData.dateSaisie} 
                     onChange={handleChange} 
-                    onFocus={() => {
-                      if (!formData.dateDemande && formData.dateSaisie) {
-                        setFormData(prev => ({ ...prev, dateDemande: formData.dateSaisie }));
-                      }
-                    }}
+                    disabled={isArchived} 
                     type="date" 
-                    disabled={isArchived}
-                    className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" 
+                    className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 disabled:opacity-75 ${!formData.dateSaisie ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`} 
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Date de devis</label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-grow max-w-[160px]">
-                      <input 
-                        name="dateDevis" 
-                        value={formData.dateDevis} 
-                        min={formData.dateDemande || formData.dateSaisie} 
-                        onChange={handleChange} 
-                        onFocus={() => {
-                          const fallbackDate = formData.dateDemande || formData.dateSaisie;
-                          if (!formData.dateDevis && fallbackDate) {
-                            setFormData(prev => ({ ...prev, dateDevis: fallbackDate }));
-                          }
-                        }}
-                        type="date" 
-                        disabled={isArchived}
-                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" 
-                      />
-                    </div>
-                    
-                    <div className="flex-shrink-0">
-                      <input 
-                        type="file" 
-                        ref={devisInputRef}
-                        onChange={handleDevisPhotos}
-                        accept="image/*" 
-                        capture="environment"
-                        multiple 
-                        className="hidden" 
-                      />
-                      {formData.urlDevis ? (
-                        <div className="flex items-center gap-2">
-                          <a 
-                            href={formData.urlDevis} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-3 py-2 rounded uppercase flex items-center gap-2 transition-colors shadow-sm"
-                          >
-                            <FileText size={14} /> Voir
-                          </a>
-                          {!isArchived && (
-                            <button
-                              type="button"
-                              onClick={removeDevis}
-                              className="p-1 text-red-500 hover:text-red-700 transition-colors"
-                            >
-                              <X size={16} />
-                            </button>
-                          )}
-                        </div>
-                      ) : pendingDevisPhotos.length > 0 ? (
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">N° de bon <span className="text-red-500">*</span></label>
+                  <div className="flex gap-2">
+                    <input 
+                      name="numeroBon" 
+                      value={formData.numeroBon} 
+                      onChange={handleChange} 
+                      disabled={isArchived} 
+                      type="text" 
+                      className={`flex-grow border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 font-bold disabled:opacity-75 ${!formData.numeroBon ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`} 
+                    />
+                    {formData.photo_url && (
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={generateFinalDevisPDF}
-                          disabled={isUploadingDevis || isArchived}
-                          className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-2 py-1.5 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
+                          onClick={() => window.open(formData.photo_url, '_blank')}
+                          className="bg-[#daa520] hover:bg-[#ffb700] text-black text-[10px] font-black px-3 py-1.5 rounded uppercase flex items-center gap-1 transition-all shadow-sm"
                         >
-                          {isUploadingDevis ? <Loader2 size={12} className="animate-spin" /> : "OK (" + pendingDevisPhotos.length + ")"}
+                          <Camera size={14} /> Bons Photos
                         </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => devisInputRef.current?.click()}
-                          disabled={isUploadingDevis || isArchived}
-                          className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-2 py-1.5 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
-                        >
-                          <Camera size={14} /> Photo
+                        {!isArchived && (
+                          <button
+                            type="button"
+                            onClick={removePhoto}
+                            className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                            title="Supprimer la photo"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div></div>
+            )}
+          </div>
+          <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+            <div className="p-3">
+              <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2 mb-4">
+                <User size={16} /> Informations Demandeur
+              </h3>
+
+              {/* Priority Fields: Always visible */}
+              <div className="space-y-4 mb-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">
+                    Demandeur
+                  </label>
+                  <input
+                    name="demandeur"
+                    value={formData.demandeur}
+                    onChange={handleChange}
+                    disabled={isArchived}
+                    type="text"
+                    className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-300 uppercase">Date de demande <span className="text-red-500">*</span></label>
+                    <input
+                      name="dateDemande"
+                      value={formData.dateDemande}
+                      onChange={handleChange}
+                      onFocus={() => {
+                        if (!formData.dateDemande && formData.dateSaisie) {
+                          setFormData(prev => ({ ...prev, dateDemande: formData.dateSaisie }));
+                        }
+                      }}
+                      type="date"
+                      disabled={isArchived}
+                      className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 disabled:opacity-75 ${!formData.dateDemande ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Date de devis</label>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-grow max-w-[160px]">
+                        <input
+                          name="dateDevis"
+                          value={formData.dateDevis}
+                          min={formData.dateDemande || formData.dateSaisie}
+                          onChange={handleChange}
+                          onFocus={() => {
+                            const fallbackDate = formData.dateDemande || formData.dateSaisie;
+                            if (!formData.dateDevis && fallbackDate) {
+                              setFormData(prev => ({ ...prev, dateDevis: fallbackDate }));
+                            }
+                          }}
+                          type="date"
+                          disabled={isArchived}
+                          className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75"
+                        />
+                      </div>
+
+                      <div className="flex-shrink-0">
+                        <input
+                          type="file"
+                          ref={devisInputRef}
+                          onChange={handleDevisPhotos}
+                          accept="image/*"
+                          capture="environment"
+                          multiple
+                          className="hidden"
+                        />
+                        {formData.urlDevis ? (
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={formData.urlDevis}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-3 py-2 rounded uppercase flex items-center gap-2 transition-colors shadow-sm"
+                            >
+                              <FileText size={14} /> Voir
+                            </a>
+                            {!isArchived && (
+                              <button
+                                type="button"
+                                onClick={removeDevis}
+                                className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                              >
+                                <X size={16} />
+                              </button>
+                            )}
+                          </div>
+                        ) : pendingDevisPhotos.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={generateFinalDevisPDF}
+                            disabled={isUploadingDevis || isArchived}
+                            className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-2 py-1.5 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
+                          >
+                            {isUploadingDevis ? <Loader2 size={12} className="animate-spin" /> : "OK (" + pendingDevisPhotos.length + ")"}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => devisInputRef.current?.click()}
+                            disabled={isUploadingDevis || isArchived}
+                            className="bg-[#daa520] hover:bg-[#ffb700] active:scale-95 text-black text-[10px] font-black px-2 py-1.5 rounded uppercase flex items-center gap-1 transition-colors shadow-sm"
+                          >
+                            <Camera size={14} /> Photo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Trigger for General Info */}
+              <button
+                type="button"
+                onClick={() => setCollapsedSections(prev => ({ ...prev, demandeur: !prev.demandeur }))}
+                className="text-[10px] font-black text-[#daa520]/70 hover:text-[#daa520] uppercase flex items-center gap-1 transition-colors"
+              >
+                {collapsedSections.demandeur ? 'Voir plus d\'infos demandeur ↓' : 'Voir moins d\'infos demandeur ↑'}
+              </button>
+            </div>
+
+            {!collapsedSections.demandeur && (
+              <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Référence Bâtiment</label>
+                  <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setCollapsedSections(prev => ({ ...prev, localisation: !prev.localisation }))}
+              className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+            >
+              <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
+                <MapPin size={16} /> Localisation
+              </h3>
+              {collapsedSections.localisation ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
+            </button>
+
+            {!collapsedSections.localisation && (
+              <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Lieu</label>
+                  <input name="lieu" value={formData.lieu} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-300 uppercase">Étage</label>
+                    <input name="etage" value={formData.etage} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-300 uppercase">Pièce</label>
+                    <input name="piece" value={formData.piece} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setCollapsedSections(prev => ({ ...prev, details: !prev.details }))}
+              className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+            >
+              <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
+                <Settings size={16} /> Détails de l'intervention
+              </h3>
+              {collapsedSections.details ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
+            </button>
+
+            {!collapsedSections.details && (
+              <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
+                <div className="mb-4">
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Demande</label>
+                  <input name="demande" value={formData.demande} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Description de l'intervention</label>
+                  <textarea name="description" value={formData.description} onChange={handleChange} disabled={isArchived} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 h-24 resize-none disabled:opacity-75" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {currentId && (
+            <section ref={passagesRef} className="border-t border-slate-200 pt-8 mt-8 scroll-mt-32">
+              <div className="flex justify-between items-center border-b-2 border-[#daa520] pb-1 mb-3">
+                <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider">Retour de fiche / Passages</h3>
+              </div>
+
+              <div className="space-y-6">
+                {formData.passages?.map((passage: any, index: number) => (
+                  <div key={passage.id} className="bg-white text-slate-900/50 p-4 rounded border border-slate-200 relative">
+                    <div className="absolute top-4 right-4">
+                      {formData.passages.length > 1 && !isArchived && (
+                        <button type="button" onClick={() => removePassage(passage.id)} className="text-red-500 hover:text-red-700" aria-label="Supprimer ce passage">
+                          <Trash2 size={16} />
                         </button>
                       )}
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                    <h4 className="text-xs font-bold text-slate-700 mb-4">Intervention #{index + 1}</h4>
 
-            {/* Trigger for General Info */}
-            <button 
-              type="button"
-              onClick={() => setCollapsedSections(prev => ({ ...prev, demandeur: !prev.demandeur }))}
-              className="text-[10px] font-black text-[#daa520]/70 hover:text-[#daa520] uppercase flex items-center gap-1 transition-colors"
-            >
-              {collapsedSections.demandeur ? 'Voir plus d\'infos demandeur ↓' : 'Voir moins d\'infos demandeur ↑'}
-            </button>
-          </div>
-
-          {!collapsedSections.demandeur && (
-            <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Référence Bâtiment</label>
-                <input name="refBatiment" value={formData.refBatiment} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
-          <button 
-            type="button"
-            onClick={() => setCollapsedSections(prev => ({ ...prev, localisation: !prev.localisation }))}
-            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
-          >
-            <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
-              <MapPin size={16} /> Localisation
-            </h3>
-            {collapsedSections.localisation ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
-          </button>
-          
-          {!collapsedSections.localisation && (
-            <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Lieu</label>
-                <input name="lieu" value={formData.lieu} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Étage</label>
-                  <input name="etage" value={formData.etage} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-300 uppercase">Pièce</label>
-                  <input name="piece" value={formData.piece} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 disabled:opacity-75" />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="bg-[#1B263B]/30 rounded-xl border border-white/5 overflow-hidden">
-          <button 
-            type="button"
-            onClick={() => setCollapsedSections(prev => ({ ...prev, details: !prev.details }))}
-            className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
-          >
-            <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider flex items-center gap-2">
-              <Settings size={16} /> Détails de l'intervention
-            </h3>
-            {collapsedSections.details ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronUp size={18} className="text-slate-400" />}
-          </button>
-          
-          {!collapsedSections.details && (
-            <div className="p-4 pt-0 space-y-4 border-t border-white/5 pt-4">
-              <div className="mb-4">
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Demande</label>
-                <input name="demande" value={formData.demande} onChange={handleChange} disabled={isArchived} type="text" className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 font-bold disabled:opacity-75" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 uppercase">Description de l'intervention</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} disabled={isArchived} className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white text-slate-900 h-24 resize-none disabled:opacity-75" />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {currentId && (
-          <section ref={passagesRef} className="border-t border-slate-200 pt-8 mt-8 scroll-mt-32">
-            <div className="flex justify-between items-center border-b-2 border-[#daa520] pb-1 mb-3">
-              <h3 className="text-xs font-black text-[#daa520] uppercase tracking-wider">Retour de fiche / Passages</h3>
-            </div>
-            
-            <div className="space-y-6">
-              {formData.passages?.map((passage: any, index: number) => (
-                <div key={passage.id} className="bg-white text-slate-900/50 p-4 rounded border border-slate-200 relative">
-                  <div className="absolute top-4 right-4">
-                     {formData.passages.length > 1 && !isArchived && (
-                       <button type="button" onClick={() => removePassage(passage.id)} className="text-red-500 hover:text-red-700" aria-label="Supprimer ce passage">
-                         <Trash2 size={16} />
-                       </button>
-                     )}
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-700 mb-4">Intervention #{index + 1}</h4>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-300 uppercase">
-                        Date d'intervention {(passage.tempsPasse || passage.travauxRealises || passage.raisonNouveauPassage) && <span className="text-red-500">*</span>}
-                      </label>
-                      <input 
-                        type="date" 
-                        value={passage.dateExecution} 
-                        disabled={isArchived}
-                        min={formData.dateSaisie} 
-                        onChange={(e) => handlePassageChange(passage.id, 'dateExecution', e.target.value)} 
-                        onFocus={() => { if (!passage.dateExecution && formData.dateSaisie) handlePassageChange(passage.id, 'dateExecution', formData.dateSaisie) }} 
-                        className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white disabled:opacity-75 ${(passage.tempsPasse || passage.travauxRealises || passage.raisonNouveauPassage) && !passage.dateExecution ? 'border-red-500 bg-red-50' : 'border-slate-300'}`} 
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-300 uppercase">
+                          Date d'intervention <span className="text-red-500">*</span>
+                        </label>
+                        <input 
+                          type="date" 
+                          value={passage.dateExecution} 
+                          disabled={isArchived}
+                          min={formData.dateSaisie} 
+                          onChange={(e) => handlePassageChange(passage.id, 'dateExecution', e.target.value)} 
+                          onFocus={() => { if (!passage.dateExecution && formData.dateSaisie) handlePassageChange(passage.id, 'dateExecution', formData.dateSaisie) }} 
+                          className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 disabled:opacity-75 ${!passage.dateExecution ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`} 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-300 uppercase">
+                          Temps passé <span className="text-red-500">*</span>
+                        </label>
+                        <input 
+                          list="temps-passe-list" 
+                          value={passage.tempsPasse} 
+                          disabled={isArchived}
+                          onChange={(e) => handlePassageChange(passage.id, 'tempsPasse', e.target.value)} 
+                          type="text" 
+                          placeholder="ex: 02h30" 
+                          className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none text-slate-900 font-bold disabled:opacity-75 ${!passage.tempsPasse ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'}`} 
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-300 uppercase">
-                        Temps passé {(passage.dateExecution || passage.travauxRealises || passage.raisonNouveauPassage) && <span className="text-red-500">*</span>}
-                      </label>
-                      <input 
-                        list="temps-passe-list" 
-                        value={passage.tempsPasse} 
-                        disabled={isArchived}
-                        onChange={(e) => handlePassageChange(passage.id, 'tempsPasse', e.target.value)} 
-                        type="text" 
-                        placeholder="ex: 02h30" 
-                        className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold disabled:opacity-75 ${(passage.dateExecution || passage.travauxRealises || passage.raisonNouveauPassage) && !passage.tempsPasse ? 'border-red-500 bg-red-50' : 'border-slate-300'}`} 
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <label className="block text-[10px] font-bold text-slate-300 uppercase">Nom de l'intervenant</label>
-                    <select 
-                      value={passage.nomIntervenant} 
-                      disabled={isArchived}
-                      onChange={(e) => handlePassageChange(passage.id, 'nomIntervenant', e.target.value)} 
-                      className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold disabled:opacity-75"
-                    >
-                      <option value="Christophe Meyer">Christophe Meyer</option>
-                      <option value="Autre">Autre...</option>
-                    </select>
-                  </div>
 
-                  <div className="mb-4">
-                    <label className="block text-[10px] font-bold text-slate-300 uppercase">Travaux réalisés</label>
-                    <textarea 
-                      value={passage.travauxRealises} 
-                      disabled={isArchived}
-                      onChange={(e) => handlePassageChange(passage.id, 'travauxRealises', e.target.value)} 
-                      className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white h-24 resize-none disabled:opacity-75" 
-                    />
-                  </div>
-                  
-                  <div className="pt-4 border-t border-slate-200 space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">
-                        État / Suite de l'intervention {(passage.dateExecution || passage.tempsPasse || passage.travauxRealises) && <span className="text-red-500">*</span>}
-                      </label>
-                      <select 
-                        value={passage.raisonNouveauPassage || ""} 
-                        onChange={(e) => handlePassageChange(passage.id, 'raisonNouveauPassage', e.target.value)} 
-                        className={`w-full border rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold ${(passage.dateExecution || passage.tempsPasse || passage.travauxRealises) && !passage.raisonNouveauPassage ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
+                    <div className="mb-4">
+                      <label className="block text-[10px] font-bold text-slate-300 uppercase">Nom de l'intervenant</label>
+                      <select
+                        value={passage.nomIntervenant}
+                        disabled={isArchived}
+                        onChange={(e) => handlePassageChange(passage.id, 'nomIntervenant', e.target.value)}
+                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold disabled:opacity-75"
                       >
-                        <option value="">Sélectionner l'état</option>
-                        {[
-                          "Autre passage nécessaire",
-                          "Demande de devis",
-                          "Intervention d'une autre entreprise nécessaire",
-                          "Pièce(s) manquante(s)",
-                          "Terminé"
-                        ].sort((a, b) => a.localeCompare(b, 'fr')).map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
+                        <option value="Christophe Meyer">Christophe Meyer</option>
+                        <option value="Autre">Autre...</option>
                       </select>
                     </div>
+
+                    <div className="mb-4">
+                      <label className="block text-[10px] font-bold text-slate-300 uppercase">Travaux réalisés</label>
+                      <textarea
+                        value={passage.travauxRealises}
+                        disabled={isArchived}
+                        onChange={(e) => handlePassageChange(passage.id, 'travauxRealises', e.target.value)}
+                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-[#daa520] outline-none bg-white h-24 resize-none disabled:opacity-75"
+                      />
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-200 space-y-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-3 flex items-center gap-2">
+                          État / Suite de l'intervention <span className="text-red-500">*</span>
+                        </label>
+                        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 rounded border transition-all ${!passage.raisonNouveauPassage ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50/50'}`}>
+                          {[
+                            "Autre passage nécessaire",
+                            "Demande de devis",
+                            "Intervention d'une autre entreprise nécessaire",
+                            "Pièce(s) manquante(s)",
+                            "Terminé"
+                          ].sort((a, b) => a.localeCompare(b, 'fr')).map(opt => {
+                            const isChecked = passage.raisonNouveauPassage?.split(', ').includes(opt);
+                            return (
+                              <label 
+                                key={opt} 
+                                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all border ${isChecked ? 'bg-[#daa520]/10 border-[#daa520] shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'}`}
+                              >
+                                <input 
+                                  type="checkbox" 
+                                  checked={isChecked}
+                                  disabled={isArchived}
+                                  onChange={(e) => {
+                                    const isClosing = opt === 'Terminé' || opt === "Intervention d'une autre entreprise nécessaire";
+                                    let currentChoices = passage.raisonNouveauPassage ? passage.raisonNouveauPassage.split(', ') : [];
+                                    
+                                    if (e.target.checked) {
+                                      if (isClosing) {
+                                        // Si on coche un état de clôture, on vide tout le reste
+                                        currentChoices = [opt];
+                                      } else {
+                                        // Si on coche un état normal, on retire les états de clôture
+                                        currentChoices = currentChoices.filter(c => c !== 'Terminé' && c !== "Intervention d'une autre entreprise nécessaire");
+                                        if (!currentChoices.includes(opt)) currentChoices.push(opt);
+                                      }
+                                    } else {
+                                      currentChoices = currentChoices.filter(c => c !== opt);
+                                    }
+                                    handlePassageChange(passage.id, 'raisonNouveauPassage', currentChoices.sort().join(', '));
+                                  }}
+                                  className="w-4 h-4 rounded border-slate-300 text-[#daa520] focus:ring-[#daa520] cursor-pointer"
+                                />
+                                <span className={`text-[10px] font-black uppercase tracking-tight ${isChecked ? 'text-slate-900' : 'text-slate-600'}`}>
+                                  {opt}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
+                ))}
+              </div>
 
-                </div>
-              ))}
-            </div>
+              <datalist id="temps-passe-list">
+                <option value="01h00" />
+                <option value="02h00" />
+                <option value="03h00" />
+                <option value="04h00" />
+                <option value="05h00" />
+                <option value="06h00" />
+                <option value="07h00" />
+                <option value="08h00" />
+              </datalist>
+            </section>
+          )}
 
-            <datalist id="temps-passe-list">
-              <option value="01h00" />
-              <option value="02h00" />
-              <option value="03h00" />
-              <option value="04h00" />
-              <option value="05h00" />
-              <option value="06h00" />
-              <option value="07h00" />
-              <option value="08h00" />
-            </datalist>
-          </section>
-        )}
+        </form>
 
-      </form>
+        {/* Bouton Retour en haut */}
+        <button
+          type="button"
+          onClick={() => formTopRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          className="fixed bottom-6 right-6 w-12 h-12 bg-[#daa520] text-black rounded-full shadow-2xl flex items-center justify-center hover:bg-[#ffb700] transition-all active:scale-95 z-50 border-2 border-[#daa520]/30"
+          title="Retour en haut"
+        >
+          <ChevronUp size={24} />
+        </button>
 
-      {/* Bouton Retour en haut */}
-      <button 
-        type="button"
-        onClick={() => formTopRef.current?.scrollIntoView({ behavior: 'smooth' })}
-        className="fixed bottom-6 right-6 w-12 h-12 bg-[#daa520] text-black rounded-full shadow-2xl flex items-center justify-center hover:bg-[#ffb700] transition-all active:scale-95 z-50 border-2 border-[#daa520]/30"
-        title="Retour en haut"
-      >
-        <ChevronUp size={24} />
-      </button>
-
-    </div>
+      </div>
     );
   };
 
   const deleteIntervention = async (id: string) => {
-    if (window.confirm("Voulez-vous vraiment supprimer cette intervention ?")) {
+    if (window.confirm("Voulez-vous vraiment supprimer cette intervention ? Toutes les données, y compris les photos et devis associés, seront définitivement supprimées.")) {
+      const itemToDelete = interventions.find(i => i.id === id);
+      
       setInterventions(interventions.filter((i: any) => i.id !== id));
       if (import.meta.env.VITE_SUPABASE_URL) {
         setSyncStatus('syncing');
         try {
+          // 1. Suppression des fichiers de stockage
+          if (itemToDelete) {
+            // Photo du bon
+            if (itemToDelete.photo_url) {
+              try {
+                const parts = itemToDelete.photo_url.split('/interventions-photos/');
+                if (parts.length > 1) {
+                  await supabase.storage.from('interventions-photos').remove([parts[1]]);
+                }
+              } catch (e) { console.error("Erreur suppression photo storage:", e); }
+            }
+            
+            // Devis PDF
+            if (itemToDelete.urlDevis) {
+              try {
+                const parts = itemToDelete.urlDevis.split('/devis/');
+                if (parts.length > 1) {
+                  await supabase.storage.from('devis').remove([parts[1]]);
+                }
+              } catch (e) { console.error("Erreur suppression devis storage:", e); }
+            }
+          }
+
+          // 2. Suppression de l'entrée en base
           await supabase.from('interventions').delete().eq('id', id);
           setSyncStatus('synced');
+          showNotification("Intervention supprimée avec succès", "success");
         } catch (e) {
+          console.error("Erreur lors de la suppression complète:", e);
           setSyncStatus('error');
         }
       }
@@ -1576,102 +2123,103 @@ export default function App() {
 
   const renderConsultation = () => {
     if (!Array.isArray(interventions)) return <div className="text-white p-8">Erreur : Les données ne sont pas au bon format.</div>;
-    
-    const displayedInterventions = (interventions || []).filter((i: any) => {
-      if (!i) return false;
-      if (consultationTab === 'enCours') return !i.archived;
-      if (consultationTab === 'archivees') return i.archived;
-      if (consultationTab === 'enRetard') return !i.archived && isDateOlderThan30Days(i.dateDemande);
-      return true;
-    });
-    
+
+    const displayedInterventions = (interventions || [])
+      .filter((i: any) => {
+        if (!i) return false;
+        if (consultationTab === 'enCours') return !i.archived;
+        if (consultationTab === 'archivees') return i.archived;
+        if (consultationTab === 'enRetard') return !i.archived && isDateOlderThan30Days(i.dateDemande);
+        return true;
+      })
+      .sort((a: any, b: any) => {
+        const dateA = a.dateDemande || a.dateSaisie || "";
+        const dateB = b.dateDemande || b.dateSaisie || "";
+        if (consultationTab === 'archivees') {
+          return dateB.localeCompare(dateA); // Plus récent en premier pour les archives
+        }
+        return dateA.localeCompare(dateB); // Plus ancien en premier pour le reste
+      });
+    const enCoursCount = interventions.filter((i: any) => !i.archived).length;
+    const archiveesCount = interventions.filter((i: any) => i.archived).length;
+    const enRetardCount = interventions.filter((i: any) => !i.archived && isDateOlderThan30Days(i.dateDemande)).length;
+
     return (
       <div className="w-full max-w-4xl bg-[#415A77] shadow-2xl border border-slate-500 rounded-lg relative">
         <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b border-white/5 shadow-md">
           <div className="flex justify-between items-center">
             <div>
-              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block uppercase">← Précédent</button>
               <h1 className="text-2xl font-black uppercase tracking-tighter">Consultation des <span className="text-[#daa520]">bons</span></h1>
             </div>
             <div className="text-right">
-               <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Base de données</p>
+              <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Base de données</p>
             </div>
           </div>
         </header>
         <div className="p-8">
-        <p className="text-[10px] text-white/60 font-bold mb-2 italic uppercase tracking-wider">
-          Les interventions archivées ne sont plus modifiables
-        </p>
-        <div className="flex gap-2 mb-6 border-b border-slate-200 pb-4">
-          <button 
-            onClick={() => setConsultationTab('enCours')}
-            className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'enCours' ? 'bg-[#daa520] text-black shadow-lg shadow-[#daa520]/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-          >
-            En cours
-          </button>
-          <button 
-            onClick={() => setConsultationTab('archivees')}
-            className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'archivees' ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-          >
-            Archivées
-          </button>
-          <button 
-            onClick={() => setConsultationTab('enRetard')}
-            className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-all flex items-center justify-center gap-1 ${consultationTab === 'enRetard' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 scale-105 z-10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-          >
-            <ShieldCheck size={14} /> En retard
-          </button>
-        </div>
+          <p className="text-[10px] text-white/60 font-bold mb-2 italic uppercase tracking-wider">
+            Les interventions archivées ne sont plus modifiables
+          </p>
+          <div className="flex gap-2 mb-6 border-b border-slate-200 pb-4">
+            <button
+              onClick={() => setConsultationTab('enCours')}
+              className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'enCours' ? 'bg-[#daa520] text-black shadow-lg shadow-[#daa520]/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              En cours ({enCoursCount})
+            </button>
+            <button
+              onClick={() => setConsultationTab('archivees')}
+              className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-colors ${consultationTab === 'archivees' ? 'bg-slate-800 text-white shadow-lg shadow-slate-800/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              Archivées ({archiveesCount})
+            </button>
+            <button
+              onClick={() => setConsultationTab('enRetard')}
+              className={`flex-1 px-2 py-2.5 rounded font-black text-[10px] md:text-xs uppercase tracking-tighter transition-all flex items-center justify-center gap-1 ${consultationTab === 'enRetard' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 scale-105 z-10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              <ShieldCheck size={14} /> En retard ({enRetardCount})
+            </button>
+          </div>
 
-        <div className="space-y-4">
-          {(displayedInterventions || []).map((i: any) => {
-            if (!i) return null;
-            return (
-            <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
-              <div className='flex justify-between items-center mb-2'>
-                <button 
-                  onClick={() => handleOpenSaisie(i)} 
-                  className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
-                >
-                  <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
-                    {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
-                    {isDateOlderThan30Days(i.dateDemande) && (
-                      <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard (+{getDaysElapsed(i.dateDemande)}j)
-                      </span>
-                    )}
-                  </div>
-                  {i.passages && i.passages.length > 1 ? (
-                    <div className="text-xs text-slate-500 font-normal mt-1">
-                      {i.passages.length} passages enregistrés — Total : {(() => {
-                        const totalMin = i.passages.reduce((acc: number, p: any) => acc + parseDuration(p.tempsPasse), 0);
-                        return formatDuration(totalMin);
-                      })()}
+          <div className="space-y-4">
+            {(displayedInterventions || []).map((i: any) => {
+              if (!i) return null;
+              return (
+                <div key={i.id} className={`w-full py-2 px-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
+                  <div className='flex justify-between items-center'>
+                    <button
+                      onClick={() => handleOpenSaisie(i)}
+                      className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
+                    >
+                      <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
+                        {i.numeroBon ? `Bon n°${i.numeroBon}` : 'Sans n°'} — {i.dateDemande ? i.dateDemande.split('-').reverse().join('/') : 'Date inconnue'}
+                        {isDateOlderThan30Days(i.dateDemande) && (
+                          <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
+                            En retard (+{getDaysElapsed(i.dateDemande)}j)
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                    <div className='flex gap-2'>
+                      {!i.archived && (
+                        <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
+                          <Trash2 size={20} />
+                        </button>
+                      )}
                     </div>
-                  ) : (i.nomIntervenant && (
-                    <div className="text-xs text-slate-500 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
-                  ))}
-                  {i.archived && (
-                    <div className="text-[10px] font-bold text-emerald-600 mt-2 uppercase">✓ Intervention clôturée</div>
-                  )}
-                </button>
-                <div className='flex gap-2'>
-                  <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
-                    <Trash2 size={20} />
-                  </button>
+                  </div>
                 </div>
-              </div>
-            </div>
-            );
-          })}
-          {displayedInterventions.length === 0 && (
-            <p className="text-slate-300 italic">
-              {consultationTab === 'enCours' 
-                ? "Aucune intervention active (non signée) enregistrée." 
-                : "Aucune intervention archivée (signée) pour le moment."}
-            </p>
-          )}
-        </div>
+              );
+            })}
+            {displayedInterventions.length === 0 && (
+              <p className="text-slate-300 italic">
+                {consultationTab === 'enCours'
+                  ? "Aucune intervention active (non signée) enregistrée."
+                  : "Aucune intervention archivée (signée) pour le moment."}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1686,7 +2234,7 @@ export default function App() {
     const filteredInterventions = (!searchQuery && !searchStartDate) ? [] : (interventions || []).filter((i: any) => {
       if (!i) return false;
       const matchBon = !searchQuery || (i.numeroBon && i.numeroBon.toLowerCase().includes(searchQuery.toLowerCase()));
-      
+
       let matchDate = true;
       if (searchStartDate || searchEndDate) {
         const d = i.dateSaisie;
@@ -1706,101 +2254,90 @@ export default function App() {
         <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b border-white/5 shadow-md">
           <div className="flex justify-between items-center">
             <div>
-              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block uppercase">← Précédent</button>
               <h1 className="text-2xl font-black uppercase tracking-tighter">Recherche de <span className="text-[#daa520]">bons</span></h1>
             </div>
             <div className="text-right">
-               <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Base de données</p>
+              <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Base de données</p>
             </div>
           </div>
         </header>
         <div className="p-8">
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="md:col-span-2">
-            <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Recherche par N° de bon</label>
-            <input 
-              type="text" 
-              list="bon-list"
-              placeholder="Entrez ou sélectionnez un N° de bon..." 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
-              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold"
-            />
-            <datalist id="bon-list">
-              {uniqueBons.map((bon: any) => (
-                <option key={bon} value={bon} />
-              ))}
-            </datalist>
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Date saisie (À partir du)</label>
-            <input 
-              type="date" 
-              value={searchStartDate} 
-              onChange={(e) => setSearchStartDate(e.target.value)} 
-              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Date saisie (Jusqu'au)</label>
-            <input 
-              type="date" 
-              value={searchEndDate} 
-              onChange={(e) => setSearchEndDate(e.target.value)} 
-              className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white"
-            />
-          </div>
-        </div>
 
-        <div className="space-y-4">
-          {isSearching && filteredInterventions.length === 0 && (
-             <p className="text-slate-300 italic">Aucune intervention trouvée pour ces critères.</p>
-          )}
-          {(!isSearching) && (
-            <p className="text-slate-300 italic">Veuillez entrer un numéro de bon ou une plage de dates pour lancer la recherche.</p>
-          )}
-          {isSearching && (filteredInterventions || []).map((i: any) => {
-            if (!i) return null;
-            return (
-            <div key={i.id} className={`w-full p-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
-              <div className='flex justify-between items-center mb-2'>
-                <button 
-                  onClick={() => handleOpenSaisie(i)} 
-                  className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
-                >
-                  <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
-                    {i.numeroBon ? `Bon n°${i.numeroBon} - ` : ''}{i.lieu} - {i.demande || 'Sans titre'}
-                    {isDateOlderThan30Days(i.dateDemande) && (
-                      <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
-                        En retard (+{getDaysElapsed(i.dateDemande)}j)
-                      </span>
-                    )}
-                  </div>
-                  {i.passages && i.passages.length > 1 ? (
-                    <div className="text-xs text-slate-500 font-normal mt-1">
-                      {i.passages.length} passages enregistrés — Total : {(() => {
-                        const totalMin = i.passages.reduce((acc: number, p: any) => acc + parseDuration(p.tempsPasse), 0);
-                        return formatDuration(totalMin);
-                      })()}
-                    </div>
-                  ) : (i.nomIntervenant && (
-                    <div className="text-xs text-slate-500 font-normal mt-1">Intervenant : {i.nomIntervenant} {i.tempsPasse && `(${i.tempsPasse})`}</div>
-                  ))}
-                  {i.archived && (
-                    <div className="text-[10px] font-bold text-emerald-600 mt-2 uppercase">✓ Intervention clôturée</div>
-                  )}
-                </button>
-                <div className='flex gap-2'>
-                  <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
-                    <Trash2 size={20} />
-                  </button>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Recherche par N° de bon</label>
+              <input
+                type="text"
+                list="bon-list"
+                placeholder="Entrez ou sélectionnez un N° de bon..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white font-bold"
+              />
+              <datalist id="bon-list">
+                {uniqueBons.map((bon: any) => (
+                  <option key={bon} value={bon} />
+                ))}
+              </datalist>
             </div>
-            );
-          })}
-        </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Date saisie (À partir du)</label>
+              <input
+                type="date"
+                value={searchStartDate}
+                onChange={(e) => setSearchStartDate(e.target.value)}
+                className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Date saisie (Jusqu'au)</label>
+              <input
+                type="date"
+                value={searchEndDate}
+                onChange={(e) => setSearchEndDate(e.target.value)}
+                className="w-full border border-slate-300 rounded px-4 py-2 text-base focus:ring-2 focus:ring-[#daa520] outline-none bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {isSearching && filteredInterventions.length === 0 && (
+              <p className="text-slate-300 italic">Aucune intervention trouvée pour ces critères.</p>
+            )}
+            {(!isSearching) && (
+              <p className="text-slate-300 italic">Veuillez entrer un numéro de bon ou une plage de dates pour lancer la recherche.</p>
+            )}
+            {isSearching && (filteredInterventions || []).map((i: any) => {
+              if (!i) return null;
+              return (
+                <div key={i.id} className={`w-full py-2 px-4 rounded border ${i.archived ? 'bg-slate-100 border-slate-300' : 'bg-white text-slate-900 border-slate-200'}`}>
+                  <div className='flex justify-between items-center'>
+                    <button
+                      onClick={() => handleOpenSaisie(i)}
+                      className={`flex-grow font-bold text-left transition-colors ${i.archived ? 'text-slate-700 hover:text-slate-900' : 'text-slate-900 hover:text-[#daa520]'}`}
+                    >
+                      <div className={`text-base ${isDateOlderThan30Days(i.dateDemande) ? 'text-red-600' : ''}`}>
+                        {i.numeroBon ? `Bon n°${i.numeroBon}` : 'Sans n°'} — {i.dateDemande ? i.dateDemande.split('-').reverse().join('/') : 'Date inconnue'}
+                        {isDateOlderThan30Days(i.dateDemande) && (
+                          <span className="inline-block bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2 uppercase tracking-wider align-middle">
+                            En retard (+{getDaysElapsed(i.dateDemande)}j)
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                    <div className='flex gap-2'>
+                      {!i.archived && (
+                        <button onClick={() => deleteIntervention(i.id)} className="text-red-600 hover:text-red-800 p-2" aria-label="Supprimer">
+                          <Trash2 size={20} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -1830,11 +2367,11 @@ export default function App() {
         <header className="sticky top-0 z-50 bg-[#1B263B] text-white p-4 md:p-6 border-b border-white/5 shadow-md">
           <div className="flex justify-between items-center">
             <div>
-              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block">← MENU</button>
+              <button onClick={() => setView('menu')} className="text-slate-400 hover:text-[#daa520] font-bold text-sm mb-1 transition-colors block uppercase">← Précédent</button>
               <h1 className="text-2xl font-black uppercase tracking-tighter">Tableau de <span className="text-[#daa520]">bord</span></h1>
             </div>
             <div className="text-right">
-               <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Reporting Analytique</p>
+              <p className="text-[10px] text-[#daa520] font-black uppercase tracking-widest">Reporting Analytique</p>
             </div>
           </div>
         </header>
@@ -1864,8 +2401,8 @@ export default function App() {
               {(statsFilter === 'year' || statsFilter === 'month') && (
                 <div>
                   <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Choisir l'année</label>
-                  <select 
-                    value={statsYear} 
+                  <select
+                    value={statsYear}
                     onChange={(e) => setStatsYear(e.target.value)}
                     className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-bold"
                   >
@@ -1877,13 +2414,13 @@ export default function App() {
               {statsFilter === 'month' && (
                 <div>
                   <label className="block text-[10px] font-bold text-slate-300 uppercase mb-2">Choisir le mois</label>
-                  <select 
-                    value={statsMonth} 
+                  <select
+                    value={statsMonth}
                     onChange={(e) => setStatsMonth(e.target.value)}
                     className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-bold"
                   >
                     {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(m => (
-                      <option key={m} value={m}>{new Date(2000, parseInt(m)-1).toLocaleString('fr-FR', { month: 'long' }).toUpperCase()}</option>
+                      <option key={m} value={m}>{new Date(2000, parseInt(m) - 1).toLocaleString('fr-FR', { month: 'long' }).toUpperCase()}</option>
                     ))}
                   </select>
                 </div>
@@ -1903,33 +2440,33 @@ export default function App() {
             </div>
           </div>
 
-        <div className="mb-6 bg-[#daa520] p-4 rounded-lg shadow-lg border-l-8 border-[#b8860b] text-center">
-          {(() => {
-            const grandTotalMinutes = filtered.reduce((acc: number, i: any) => {
-              const itemMinutes = (i.passages || []).reduce((pAcc: number, p: any) => pAcc + parseDuration(p.tempsPasse || ""), 0);
-              return acc + itemMinutes;
-            }, 0);
-            const totalDuration = formatDuration(grandTotalMinutes);
-            
-            return (
-              <h2 className="text-xl font-black text-black uppercase tracking-tighter">
-                {statsFilter === 'year' && `TOTAL ${statsYear} : ${filtered.length} (${totalDuration})`}
-                {statsFilter === 'month' && `TOTAL ${new Date(2000, parseInt(statsMonth)-1).toLocaleString('fr-FR', { month: 'long' })} ${statsYear} : ${filtered.length} (${totalDuration})`}
-                {statsFilter === 'range' && (() => {
-                  if (!statsStart || !statsEnd) return `TOTAL DU ? AU ? : ${filtered.length} (${totalDuration})`;
-                  const d1 = new Date(statsStart);
-                  const d2 = new Date(statsEnd);
-                  const monthNames = ["JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE"];
-                  
-                  if (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth()) {
-                    return `TOTAL DU ${String(d1.getDate()).padStart(2, '0')} AU ${String(d2.getDate()).padStart(2, '0')} ${monthNames[d1.getMonth()]} ${d1.getFullYear()} : ${filtered.length} (${totalDuration})`;
-                  }
-                  return `TOTAL DU ${statsStart.split('-').reverse().join('/')} AU ${statsEnd.split('-').reverse().join('/')} : ${filtered.length} (${totalDuration})`;
-                })()}
-              </h2>
-            );
-          })()}
-        </div>
+          <div className="mb-6 bg-[#daa520] p-4 rounded-lg shadow-lg border-l-8 border-[#b8860b] text-center">
+            {(() => {
+              const grandTotalMinutes = filtered.reduce((acc: number, i: any) => {
+                const itemMinutes = (i.passages || []).reduce((pAcc: number, p: any) => pAcc + parseDuration(p.tempsPasse || ""), 0);
+                return acc + itemMinutes;
+              }, 0);
+              const totalDuration = formatDuration(grandTotalMinutes);
+
+              return (
+                <h2 className="text-xl font-black text-black uppercase tracking-tighter">
+                  {statsFilter === 'year' && `TOTAL ${statsYear} : ${filtered.length} (${totalDuration})`}
+                  {statsFilter === 'month' && `TOTAL ${new Date(2000, parseInt(statsMonth) - 1).toLocaleString('fr-FR', { month: 'long' })} ${statsYear} : ${filtered.length} (${totalDuration})`}
+                  {statsFilter === 'range' && (() => {
+                    if (!statsStart || !statsEnd) return `TOTAL DU ? AU ? : ${filtered.length} (${totalDuration})`;
+                    const d1 = new Date(statsStart);
+                    const d2 = new Date(statsEnd);
+                    const monthNames = ["JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE"];
+
+                    if (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth()) {
+                      return `TOTAL DU ${String(d1.getDate()).padStart(2, '0')} AU ${String(d2.getDate()).padStart(2, '0')} ${monthNames[d1.getMonth()]} ${d1.getFullYear()} : ${filtered.length} (${totalDuration})`;
+                    }
+                    return `TOTAL DU ${statsStart.split('-').reverse().join('/')} AU ${statsEnd.split('-').reverse().join('/')} : ${filtered.length} (${totalDuration})`;
+                  })()}
+                </h2>
+              );
+            })()}
+          </div>
 
           <div className="overflow-x-auto bg-white rounded-xl shadow-xl">
             <table className="w-full text-left border-collapse">
@@ -1950,7 +2487,7 @@ export default function App() {
                   return (
                     <tr key={i.id} className={`hover:bg-slate-50 transition-colors ${isLate ? 'bg-red-50' : ''}`}>
                       <td className="px-4 py-4">
-                        <button 
+                        <button
                           onClick={() => handleOpenSaisie(i)}
                           className="text-[#daa520] hover:text-amber-700 font-black underline decoration-2 underline-offset-4"
                         >
@@ -2001,23 +2538,27 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-4 font-sans text-white">
-        <div className="w-full max-w-md bg-[#1e293b] rounded-2xl shadow-2xl border border-slate-700 p-8 flex flex-col items-center">
+        <div className="w-full max-w-md bg-[#1e293b] rounded-2xl shadow-2xl border border-slate-700 p-8 flex flex-col items-center relative">
+          {timeSinceLastOpen && (
+            <div className="absolute top-4 left-4 text-[10px] text-slate-500 font-medium tracking-tight">
+              Dernière ouverture : {timeSinceLastOpen}
+            </div>
+          )}
           <div className="w-20 h-20 bg-[#daa520]/10 rounded-full flex items-center justify-center mb-6 border border-[#daa520]/30 shadow-[0_0_15px_rgba(218,165,32,0.2)]">
             <Lock className="w-10 h-10 text-[#daa520]" />
           </div>
-          
+
           <h1 className="text-2xl font-bold mb-2 tracking-tight">Accès Sécurisé</h1>
           <p className="text-slate-400 mb-8 text-center text-sm">Veuillez entrer votre code de protection pour accéder à l'application de gestion des interventions.</p>
-          
-          <div className="flex gap-3 mb-8">
+
+          <div className={`flex gap-3 mb-8 p-4 rounded-xl transition-all ${!pinInput ? 'bg-red-500/10 border-2 border-red-500/50' : 'bg-black/20 border-2 border-white/5'}`}>
             {[...Array(6)].map((_, i) => (
-              <div 
+              <div
                 key={i}
-                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
-                  pinInput.length > i 
-                    ? 'bg-[#daa520] border-[#daa520] scale-110 shadow-[0_0_8px_rgba(218,165,32,0.5)]' 
+                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${pinInput.length > i
+                    ? 'bg-[#daa520] border-[#daa520] scale-110 shadow-[0_0_8px_rgba(218,165,32,0.5)]'
                     : 'border-slate-600 bg-transparent'
-                } ${pinError ? 'bg-red-500 border-red-500 animate-shake' : ''}`}
+                  } ${pinError ? 'bg-red-500 border-red-500 animate-shake' : ''}`}
               />
             ))}
           </div>
@@ -2032,7 +2573,7 @@ export default function App() {
                 {num}
               </button>
             ))}
-            <button 
+            <button
               onClick={() => setPinInput("")}
               className="h-16 rounded-xl bg-slate-800/50 hover:bg-red-900/30 text-red-400 text-sm font-medium transition-colors border border-slate-700/50 flex items-center justify-center"
             >
@@ -2052,79 +2593,98 @@ export default function App() {
             </button>
           </div>
 
-          <div className="mt-8 flex items-center gap-2 text-xs text-slate-500">
-            <ShieldCheck className="w-4 h-4 text-[#daa520]/60" />
-            <span>Système d'authentification matériel local</span>
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <ShieldCheck className="w-4 h-4 text-[#daa520]/60" />
+              <span>Système d'authentification matériel local</span>
+            </div>
+            
+            <button 
+              onClick={() => {
+                try {
+                  sessionStorage.removeItem('app_view');
+                  sessionStorage.removeItem('app_previous_view');
+                  sessionStorage.removeItem('app_session_active');
+                  localStorage.removeItem('app_view');
+                  localStorage.removeItem('app_previous_view');
+                  window.location.reload();
+                } catch (e) {
+                  window.location.reload();
+                }
+              }}
+              className="text-[10px] text-[#daa520]/50 hover:text-[#daa520] underline transition-colors"
+            >
+              Réinitialiser l'affichage si bloqué
+            </button>
           </div>
         </div>
-        
+
         <p className="mt-8 text-slate-600 text-xs">Gestion des Interventions - Maintenance Industrielle</p>
-        
-        <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-          }
-          .animate-shake {
-            animation: shake 0.2s ease-in-out 0s 2;
-          }
-        `}} />
+
+
       </div>
     );
   }
 
+  // Fonction de rendu sécurisée pour chaque vue
+  const renderCurrentView = () => {
+    try {
+      switch(view) {
+        case 'menu': return renderMenu();
+        case 'saisie': return renderSaisie();
+        case 'consultation': return renderConsultation();
+        case 'recherche': return renderRecherche();
+        case 'stats': return renderStats();
+        default: return renderMenu();
+      }
+    } catch (e) {
+      console.error('ERREUR RENDU VUE:', view, e);
+      return (
+        <div className="bg-red-900/50 border border-red-500 rounded-xl p-6 text-center">
+          <p className="text-white font-bold mb-2">Erreur d'affichage</p>
+          <p className="text-red-300 text-xs mb-4">{String(e)}</p>
+          <button
+            onClick={() => setView('menu')}
+            className="bg-[#daa520] text-black px-6 py-2 rounded-lg font-bold"
+          >
+            Retour au menu
+          </button>
+        </div>
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#415A77] p-6 font-sans text-slate-800">
       <div className="max-w-4xl mx-auto">
-        {view === 'menu' && renderMenu()}
-        {view === 'saisie' && renderSaisie()}
-        {view === 'consultation' && renderConsultation()}
-        {view === 'recherche' && renderRecherche()}
-        {view === 'stats' && renderStats()}
+        {renderCurrentView()}
       </div>
 
       {/* Notification Furtive (Toast) */}
       {notification && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[9999] animate-fade-in-up">
-          <div className={`px-6 py-3 rounded-full shadow-2xl border flex items-center gap-3 backdrop-blur-md ${
-            notification.type === 'success' 
-              ? 'bg-emerald-500/90 border-emerald-400 text-white' 
+          <div className={`px-6 py-3 rounded-full shadow-2xl border flex items-center gap-3 backdrop-blur-md ${notification.type === 'success'
+              ? 'bg-emerald-500/90 border-emerald-400 text-white'
               : notification.type === 'error'
-              ? 'bg-red-500/90 border-red-400 text-white'
-              : 'bg-slate-800/90 border-slate-700 text-white'
-          }`}>
+                ? 'bg-red-500/90 border-red-400 text-white'
+                : 'bg-slate-800/90 border-slate-700 text-white'
+            }`}>
             {notification.type === 'success' && <ShieldCheck className="w-5 h-5" />}
             <span className="font-bold tracking-wide">{notification.message}</span>
           </div>
         </div>
       )}
 
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translate(-50%, 20px); }
-          to { opacity: 1; transform: translate(-50%, 0); }
-        }
-        @keyframes fadeInDown {
-          from { opacity: 0; transform: translate(-50%, -10px); }
-          to { opacity: 1; transform: translate(-50%, 0); }
-        }
-        .animate-fade-in-up {
-          animation: fadeInUp 0.3s ease-out forwards;
-        }
-        .animate-fade-in-down {
-          animation: fadeInDown 0.2s ease-out forwards;
-        }
-        @keyframes modalFadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-modal-in {
-          animation: modalFadeIn 0.3s ease-out forwards;
-        }
-      `}} />
-      <FloatingSaveButton />
 
+      <FloatingSaveButton />
+      <LateInterventionsModal />
+      <DuplicateModal />
+      {renderPostSaveModal()}
+      
+      {/* Version info for debugging */}
+      <div className="fixed bottom-2 right-4 text-[8px] text-white/20 font-mono pointer-events-none">
+        MC V2.3 - ErrorBoundary
+      </div>
     </div>
   );
 }

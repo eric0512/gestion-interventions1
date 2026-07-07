@@ -9,17 +9,46 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <!-- Patch DOM pour Samsung Internet / Xiaomi MIUI Browser / navigateurs qui modifient le DOM -->
+    <!-- Ces navigateurs injectent des éléments (mode nuit, autofill, traduction) ce qui -->
+    <!-- provoque "removeChild: not a child of this node" quand React nettoie le DOM -->
+    <script>
+      (function() {
+        if (typeof Node === 'undefined') return;
+
+        var originalRemoveChild = Node.prototype.removeChild;
+        Node.prototype.removeChild = function(child) {
+          if (child.parentNode !== this) {
+            console.warn('[DOM Patch] removeChild: node moved by browser, skipping');
+            if (child.parentNode) {
+              return child.parentNode.removeChild(child);
+            }
+            return child;
+          }
+          return originalRemoveChild.apply(this, arguments);
+        };
+
+        var originalInsertBefore = Node.prototype.insertBefore;
+        Node.prototype.insertBefore = function(newNode, referenceNode) {
+          if (referenceNode && referenceNode.parentNode !== this) {
+            console.warn('[DOM Patch] insertBefore: reference node moved by browser, skipping');
+            return newNode;
+          }
+          return originalInsertBefore.apply(this, arguments);
+        };
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed: ', err));
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').catch(function(err) { console.log('SW registration failed: ', err); });
         });
       }
     </script>
   </body>
 </html>
-
