@@ -885,7 +885,7 @@ export default function App() {
           console.log(`[IA] Tentative ${i + 1} avec : ${modelName}...`);
           setExtractStep(`Analyse (${modelName})...`);
 
-          const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${API_KEY}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
 
           const payload = {
             contents: [{
