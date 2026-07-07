@@ -867,10 +867,9 @@ export default function App() {
 
       // Liste des modèles DÉTECTÉS via votre diagnostic (Vérifié !)
       const modelsToTry = [
-        "gemini-2.0-flash",
         "gemini-1.5-flash",
-        "gemini-2.0-flash-lite",
-        "gemini-1.5-flash-8b"
+        "gemini-2.0-flash",
+        "gemini-1.5-pro"
       ];
 
       let lastError: any = null;
