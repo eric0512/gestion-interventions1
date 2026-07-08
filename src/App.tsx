@@ -224,10 +224,14 @@ export default function App() {
   };
 
   // --- États pour la sécurité ---
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('app_is_authenticated') === 'true';
+  });
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
   const [isInitializingSecurity, setIsInitializingSecurity] = useState(true);
+  const [isFirstConnection, setIsFirstConnection] = useState(false);
+  const [confirmingPin, setConfirmingPin] = useState<string | null>(null);
   const [timeSinceLastOpen, setTimeSinceLastOpen] = useState<string>("");
 
   useEffect(() => {
@@ -258,10 +262,8 @@ export default function App() {
       try {
         const stored = localStorage.getItem('app_pcode');
         if (!stored) {
-          // Premier démarrage : on enregistre le code par défaut "135789"
-          const hash = await hashPin("135789");
-          localStorage.setItem('app_pcode', hash);
-          console.log("Sécurité initialisée avec le code par défaut.");
+          // Premier démarrage : l'utilisateur doit créer son code
+          setIsFirstConnection(true);
         }
       } catch (e) {
         console.error("Erreur init sécurité:", e);
@@ -276,16 +278,47 @@ export default function App() {
     if (e) e.preventDefault();
     try {
       const hash = await hashPin(pinInput);
-      const stored = localStorage.getItem('app_pcode');
+      
+      if (isFirstConnection) {
+        if (pinInput.length < 4) {
+          alert("Le code doit contenir au moins 4 chiffres.");
+          setPinError(true);
+          setPinInput("");
+          setTimeout(() => setPinError(false), 500);
+          return;
+        }
 
-      if (hash === stored) {
-        setIsAuthenticated(true);
-        setPinError(false);
+        if (confirmingPin === null) {
+          setConfirmingPin(pinInput);
+          setPinInput("");
+        } else {
+          if (pinInput === confirmingPin) {
+            localStorage.setItem('app_pcode', hash);
+            setIsFirstConnection(false);
+            setConfirmingPin(null);
+            localStorage.setItem('app_is_authenticated', 'true');
+            setIsAuthenticated(true);
+            setPinError(false);
+          } else {
+            alert("Les codes ne correspondent pas. Veuillez réessayer.");
+            setConfirmingPin(null);
+            setPinError(true);
+            setPinInput("");
+            setTimeout(() => setPinError(false), 500);
+          }
+        }
       } else {
-        setPinError(true);
-        setPinInput("");
-        // Petit effet visuel d'erreur
-        setTimeout(() => setPinError(false), 500);
+        const stored = localStorage.getItem('app_pcode');
+        if (hash === stored) {
+          localStorage.setItem('app_is_authenticated', 'true');
+          setIsAuthenticated(true);
+          setPinError(false);
+        } else {
+          setPinError(true);
+          setPinInput("");
+          // Petit effet visuel d'erreur
+          setTimeout(() => setPinError(false), 500);
+        }
       }
     } catch (e) {
       console.error("Erreur authentification:", e);
@@ -297,7 +330,7 @@ export default function App() {
     if (pinInput.length < 6) {
       const newVal = pinInput + num;
       setPinInput(newVal);
-      if (newVal.length === 6) {
+      if (newVal.length === 6 && !isFirstConnection) {
         // Auto-submit quand on arrive à 6 chiffres
         setTimeout(() => checkPin(newVal), 100);
       }
@@ -305,10 +338,12 @@ export default function App() {
   };
 
   const checkPin = async (val: string) => {
+    if (isFirstConnection) return;
     try {
       const hash = await hashPin(val);
       const stored = localStorage.getItem('app_pcode');
       if (hash === stored) {
+        localStorage.setItem('app_is_authenticated', 'true');
         setIsAuthenticated(true);
       } else {
         setPinError(true);
@@ -2540,8 +2575,19 @@ export default function App() {
             <Lock className="w-10 h-10 text-[#daa520]" />
           </div>
 
-          <h1 className="text-2xl font-bold mb-2 tracking-tight">Accès Sécurisé</h1>
-          <p className="text-slate-400 mb-8 text-center text-sm">Veuillez entrer votre code de protection pour accéder à l'application de gestion des interventions.</p>
+          <h1 className="text-2xl font-bold mb-2 tracking-tight">
+            {isFirstConnection 
+              ? (confirmingPin === null ? "Créer votre code PIN" : "Confirmer le code PIN") 
+              : "Accès Sécurisé"}
+          </h1>
+          <p className="text-slate-400 mb-8 text-center text-sm">
+            {isFirstConnection 
+              ? (confirmingPin === null 
+                  ? "C'est votre première connexion. Veuillez définir un code de protection (4 à 6 chiffres) puis valider avec la touche clé."
+                  : "Veuillez saisir à nouveau votre code pour le confirmer.")
+              : "Veuillez entrer votre code de protection pour accéder à l'application de gestion des interventions."
+            }
+          </p>
 
           <div className={`flex gap-3 mb-8 p-4 rounded-xl transition-all ${!pinInput ? 'bg-red-500/10 border-2 border-red-500/50' : 'bg-black/20 border-2 border-white/5'}`}>
             {[...Array(6)].map((_, i) => (
